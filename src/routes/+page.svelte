@@ -850,4 +850,34 @@
 
 		background-repeat: no-repeat; /* Jangan ulangi gambar */
     }
+    section {
+        display: flex;
+        flex-direction: column;
+        justify-content: top;
+        align-items: top;
+        flex: 0.6;
+        margin-top: 16px;
+        margin-left: 24px;
+        margin-right: 24px;
+    }
+    .no-select {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+
+    footer {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 12px;
+    }
+
+    @media (min-width: 480px) {
+        footer {
+            padding: 12px 0;
+        }
+    }
   </style>
