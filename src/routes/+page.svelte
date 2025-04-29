@@ -459,7 +459,7 @@
 									<div style="font-size: x-small;text-align:center">
 										ON:{dataShow.batasBawah} ~ OFF:{dataShow.batasAtas}
 									</div>
-									<div style="font-size:xx-small;" class="text-center">lastUpdate</div>
+									<div style="font-size:xx-small;" class="text-center">lastUpdate: {dataShow.lastupdate}</div>
 								</div>
 							</div>
 						{:else if dataShow.mode === taskMode.MODE_MIX}
@@ -534,7 +534,7 @@
 									ON:{dataShow.batasBawah} ~ OFF:{dataShow.batasAtas}
 								{/if}
 							</div>
-							<div style="font-size: xx-small; text-align:center;">lastUpdate</div>
+							<div style="font-size: xx-small; text-align:center;">lastUpdate: {dataShow.lastupdate}</div>
 						{/if}
 					</div>
 				</div>

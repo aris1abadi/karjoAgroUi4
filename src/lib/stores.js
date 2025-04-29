@@ -2,6 +2,7 @@ import { writable, get } from "svelte/store";
 import { persisted } from 'svelte-persisted-store'
 import mqtt from "mqtt";
 import { dev } from "$app/environment";
+import { json } from "@sveltejs/kit";
 
 
 export const networkSelect = {
@@ -11,11 +12,11 @@ export const networkSelect = {
   MODE_MQTT: 'Online'
 }
 //let setupMode = 0; //0 mode set task,1 mode set device,3 mode alert
-export const modalMode=writable({
-  
-  SET_TASK:0,
-  SET_DEVICE:1,
-  ALERT:2,
+export const modalMode = writable({
+
+  SET_TASK: 0,
+  SET_DEVICE: 1,
+  ALERT: 2,
 
 })
 
@@ -73,7 +74,7 @@ export let networkMode = writable(networkSelect.MODE_OFF);
 export const kontrolID = persisted('kontrolID', 'KA-E8C9')
 export let networkSetup = writable({ mode: false, ssid: "", password: "", mqttBroker: "", mqttPort: 1883 })
 
-export let spinnerShow=  writable([false,false,false,false]);
+export let spinnerShow = writable([false, false, false, false]);
 
 export let isStarted = writable(false);
 
@@ -107,6 +108,7 @@ export let myTask = writable([{
   mixAnama: 'Pupuk1',
   mixBnama: 'Pupuk2',
   mixCnama: 'Air',
+  lastSeen:"",
   enable: 0,
 }, {
   nama: 'Humidity',
@@ -137,6 +139,7 @@ export let myTask = writable([{
   mixAnama: 'Pupuk1',
   mixBnama: 'Pupuk2',
   mixCnama: 'Air',
+  lastSeen:"",
   enable: 0,
 }, {
   nama: 'Lengas',
@@ -167,6 +170,7 @@ export let myTask = writable([{
   mixAnama: 'Pupuk1',
   mixBnama: 'Pupuk2',
   mixCnama: 'Air',
+  lastSeen:"",
   enable: 0,
 }, {
   nama: 'Intermitten',
@@ -197,97 +201,9 @@ export let myTask = writable([{
   mixAnama: 'Pupuk1',
   mixBnama: 'Pupuk2',
   mixCnama: 'Air',
+  lastSeen:"",
   enable: 0,
 }]);
-
-/*
-export let dataTask = writable([{
-  enable: 0,
-  aktuatorUse1: 1,
-  aktuatorUse2: 2,
-  status: 0,
-  jadwal: '0',
-  sensorUse: 1,     // default sensor  
-  sensorUseType: sensorType.TEMPERATURE,
-  targetBawah: 30,
-  targetAtas: 32,
-  taskMode: taskMode.MODE_TEMPERATURE,
-  nama: 'Temperature',
-  sensorValue: 0,
-  targetMixA: 0,
-  targetMixB: 0,
-  targetMixC: 0,
-  mixingTarget: 0,
-  targetMixOut: 0,
-  mixAnama: 'Pupuk1',
-  mixBnama: 'Pupuk2',
-  mixCnama: 'Air'
-}, {
-  enable: 0,
-  aktuatorUse1: 1,
-  aktuatorUse2: 2,
-  status: 0,
-  jadwal: '0',
-  sensorUse: 1,     // default sensor  
-  sensorUseType: sensorType.HUMIDITY,
-  targetBawah: 30,
-  targetAtas: 32,
-  taskMode: taskMode.MODE_HUMIDITY,
-  nama: 'Humidity',
-  sensorValue: 0,
-  targetMixA: 0,
-  targetMixB: 0,
-  targetMixC: 0,
-  mixingTarget: 0,
-  targetMixOut: 0,
-  mixAnama: 'Pupuk1',
-  mixBnama: 'Pupuk2',
-  mixCnama: 'Air'
-}, {
-  enable: 0,
-  aktuatorUse1: 1,
-  aktuatorUse2: 2,
-  status: 0,
-  jadwal: '0',
-  sensorUse: 1,     // default sensor  
-  sensorUseType: sensorType.LENGAS,
-  targetBawah: 30,
-  targetAtas: 32,
-  taskMode: taskMode.MODE_LENGAS,
-  nama: 'Lengas',
-  sensorValue: 0,
-  targetMixA: 0,
-  targetMixB: 0,
-  targetMixC: 0,
-  mixingTarget: 0,
-  targetMixOut: 0,
-  mixAnama: 'Pupuk1',
-  mixBnama: 'Pupuk2',
-  mixCnama: 'Air'
-}, {
-  enable: 0,
-  aktuatorUse1: 1,
-  aktuatorUse2: 2,
-  status: 0,
-  jadwal: '0',
-  sensorUse: 1,     // default sensor  
-  sensorUseType: sensorType.LENGAS_REED,
-  targetBawah: 0,
-  targetAtas: 15,
-  taskMode: taskMode.MODE_INTERMITTEN,
-  nama: 'Intermittent',
-  sensorValue: 0,
-  targetMixA: 0,
-  targetMixB: 0,
-  targetMixC: 0,
-  mixingTarget: 0,
-  targetMixOut: 0,
-  mixAnama: 'Pupuk1',
-  mixBnama: 'Pupuk2',
-  mixCnama: 'Air'
-}]);
-*/
-
 
 
 
@@ -351,7 +267,7 @@ export function initMqtt() {
     mqttClient.set(client); // Set mqttClient di davalue=""lam store
     networkMode.set(networkSelect.MODE_MQTT)
     isStarted.set(true)
-    if(bleConnected){
+    if (bleConnected) {
       bleConnectionToggle();
     }
 
@@ -398,7 +314,7 @@ export function getLocalStatus() {
 
     xhttp.onreadystatechange = function () {
       if (xhttp.readyState === 4 && xhttp.status === 200) {
-        console.log("Response from kontrol:", xhttp.responseText);
+        //console.log("Response from kontrol:", xhttp.responseText);
         let resp = xhttp.responseText.split('@');
         cekMqttMsg(resp[0], resp[1]);
       }
@@ -416,7 +332,7 @@ export function kirimMsg(type, num, cmd, msg) {
   const ms = pubMqtt + type + "/" + num + "/" + cmd;
   const bleMsg = ms + ";" + msg + ";";
   const net = get(networkMode);
-  console.log(bleMsg);
+  //console.log(bleMsg);
 
   if (net === networkSelect.MODE_MQTT) {
 
@@ -448,7 +364,7 @@ export function kirimMsg(type, num, cmd, msg) {
 
     xhttp.onreadystatechange = function () {
       if (xhttp.readyState === 4 && xhttp.status === 200) {
-        console.log("Response from kontrol:", xhttp.responseText);
+        //console.log("Response from kontrol:", xhttp.responseText);
         let resp = xhttp.responseText.split('@');
         cekMqttMsg(resp[0], resp[1]);
         return true;
@@ -469,7 +385,7 @@ export function kirimMsg(type, num, cmd, msg) {
     // Kirim data dengan dua parameter
     var data = "topic=" + ms + "&msg=" + msg;
     xhttp.send(data);
-    console.log("kirim via local " + ms + " msg:" + msg)
+    //console.log("kirim via local " + ms + " msg:" + msg)
     return true
   } else {
     alert("!!! Tidak terhubung ke Kontroller !!!")
@@ -478,20 +394,14 @@ export function kirimMsg(type, num, cmd, msg) {
 }
 
 function cekMqttMsg(topic, msg_payload) {
-  //console.log("Sensor Data updated:", data);
 
-  //const splitMsg = data.split(": '")
-  //const topic = data.topic;
-  //const msg_payload = data.msg;
-  //abadinet-in/KA-8CE9/1/0/enable;1;
-  //console.log(topic + '  >  ' + msg_payload)
   const topicMqtt = topic ? topic.split("/") : [];
   if (topicMqtt.length > 0) {
     const serverId = topicMqtt[1];
     const typeTask = parseInt(topicMqtt[2]);
     const numberTask = topicMqtt[3];
     const msg_cmd = topicMqtt[4];
-
+    
     if (typeTask === msgType.KONTROL) {
       if (msg_cmd === "infoAllTask") {
         if (lastMsg != msg_payload) {
@@ -513,21 +423,9 @@ function cekMqttMsg(topic, msg_payload) {
             }
           }
           myTask.set(newArray); // Update store sekali setelah loop selesai
-        
+
         }
-      } else if (msg_cmd === "sensorValue") {
-       
-          myTask.update(task => {
-            // Ubah nilai `a` pada elemen pertama
-            task[numberTask] = { ...task[numberTask],sensorVal: parseFloat(msg_payload)}; // Ganti nilai a
-            return task; // Kembalikan array yang telah dimodifikasi
-          });
-
-
-         
-        
-       
-      } else if (msg_cmd === "getNetwork") {
+      }else if (msg_cmd === "getNetwork") {
         const net = JSON.parse(msg_payload)
         if (net.mode === 0) {
           networkSetup.mode = false
@@ -539,17 +437,33 @@ function cekMqttMsg(topic, msg_payload) {
         networkSetup.password = net.password
         networkSetup.mqttBroker = net.mqttBroker
         networkSetup.mqttPort = net.mqttPort
-        console.log(JSON.stringify(networkSetup))
+        //console.log(JSON.stringify(networkSetup))
       }
     } else if (typeTask === msgType.TASK) {
-      if (msg_cmd === "sensorValue") {
+      if (msg_cmd === "updateTask") {
+        //console.log("mqtt msg: " + msg_payload)
+        //msg  {"enable":0,"aktuator1":1,"aktuator2":2,"nodeSensor":1,"batasBawah":31,"batasAtas":81,"mode":2,"nama":"Lengas","sensorVal":80}
+        
+          let jsonData = JSON.parse(msg_payload); // Parse JSON 
+          //console.log("mqtt msg: " + JSON.stringify(jsonData))  
+          myTask.update(task => {
+            // Ubah nilai `a` pada elemen pertama
+            task[numberTask] = { ...task[numberTask], enable:jsonData.enable,aktuator1:jsonData.aktuator1,aktuator2:jsonData.aktuator2,nodeSensor:jsonData.nodeSensor,batasBawah:jsonData.batasBawah,batasAtas:jsonData.batasAtas,mode:jsonData.mode,nama:jsonData.nama }; // Ganti nilai a
+            return task; // Kembalikan array yang telah dimodifikasi
+          });
+          
+        
+      }else if (msg_cmd === "sensorValue") {
+        const timeNow = new Date();
+        const sekarang = timeNow.toLocaleString()
+
         myTask.update(task => {
-          task[numberTask] = { ...task[numberTask], sensorVal: parseInt(msg_payload) };
+          task[numberTask] = { ...task[numberTask], sensorVal: parseInt(msg_payload),lastSeen:sekarang };
           return task;
         });
         //water level
-        
-        
+
+
       } else if (msg_cmd === "enable") {
         myTask.update(task => {
           task[numberTask] = { ...task[numberTask], enable: parseInt(msg_payload) };
@@ -559,7 +473,7 @@ function cekMqttMsg(topic, msg_payload) {
           spin[numberTask] = false;
           return spin;
         });
-        
+
       } else if (msg_cmd === "aktuator1") {
         myTask.update(task => {
           task[numberTask] = { ...task[numberTask], aktuator1: parseInt(msg_payload) };
