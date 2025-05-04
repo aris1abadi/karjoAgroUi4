@@ -116,6 +116,7 @@
 
 	let setupIndex = 0;
 	let setupMode = $modalMode.SET_TASK; //0 mode set task,1 mode set device,3 mode alert
+	/*
 	function openFullscreen() {
 		const element = document.documentElement;
 		if (element.requestFullscreen) {
@@ -128,6 +129,7 @@
 			element.msRequestFullscreen();
 		}
 	}
+		*/
 
 	function getTask() {
 		kirimMsg(msgType.KONTROL, 0, 'getAllTask', '1');
@@ -795,7 +797,7 @@
 			</div>
 		{/if}
 	{:else}
-	
+
 		<!--for setupkontroller network-->
 		<div class="mx-auto grid max-w-sm grid-cols-2 gap-4">
 			{#if $networkMode === networkSelect.MODE_BT}
