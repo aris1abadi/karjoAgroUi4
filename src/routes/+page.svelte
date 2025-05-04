@@ -795,6 +795,7 @@
 			</div>
 		{/if}
 	{:else}
+	
 		<!--for setupkontroller network-->
 		<div class="mx-auto grid max-w-sm grid-cols-2 gap-4">
 			{#if $networkMode === networkSelect.MODE_BT}
