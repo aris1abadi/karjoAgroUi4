@@ -394,7 +394,7 @@
 			console.log('Update Task: ' + JSON.stringify($myTask[setupIndex]));
 		} else {
 			//simpan
-			if ($networkMode === networkSelect.MODE_LOCAL) {
+			if (($networkMode === networkSelect.MODE_LOCAL) || ($networkMode === networkSelect.MODE_BT)) {
 				kirimMsg(msgType.KONTROL, 0, 'updateServer', JSON.stringify($networkSetup));
 			} else {
 				//simpan kontrol id
