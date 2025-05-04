@@ -1,3 +1,5 @@
+
+/*
 import adapter from '@sveltejs/adapter-static';
 
 export default {
@@ -14,5 +16,27 @@ export default {
         paths: {
 			base: process.argv.includes('dev') ? '' : process.env.BASE_PATH
 		}
+	}
+};
+*/
+import adapter from '@sveltejs/adapter-static';
+import * as dotenv from 'dotenv';
+dotenv.config();
+
+const dev = process.argv.includes('dev');
+
+export default {
+	kit: {
+		adapter: adapter({
+			pages: 'docs',
+			assets: 'docs',
+			fallback: null,
+			precompress: false,
+			strict: true
+		}),
+		paths: {
+			base: dev ? '' : process.env.BASE_PATH
+		},
+		
 	}
 };

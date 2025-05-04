@@ -89,10 +89,10 @@
 		//
 		//setTimeout(getTask, 1000);
 		//setTimeout(openFullscreen, 3000);
-		if ($networkMode === networkSelect.MODE_LOCAL) {
-			setTimeout(getNetwork, 1000);
-			setInterval(getLocalStatus, 2000);
-		}
+		//if ($networkMode === networkSelect.MODE_LOCAL) {
+		//	setTimeout(getNetwork, 1000);
+		//	setInterval(getLocalStatus, 2000);
+		//}
 	});
 
 	// @ts-ignore
