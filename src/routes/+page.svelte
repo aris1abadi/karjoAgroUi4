@@ -20,11 +20,13 @@
 		getLocalStatus,
 		kontrolID,
 		networkSetup,
-		sensorType,
 		msgType,
 		spinnerShow,
 		modalMode,
-		isStarted
+		isStarted,
+
+		nodeType
+
 	} from '$lib/stores';
 
 	let defaultModal = false;
@@ -49,8 +51,8 @@
 
 	let sensorSelect = 0;
 	let sensorList = ['sensor1', 'sensor2'];
-	let setupTitle = 'Setup';
-	let sensorUseType = sensorType.TEMPERATURE;
+	let setupTitle = 'Setup';	
+	
 	// @ts-ignore
 	let lastMsg = null;
 
@@ -94,7 +96,7 @@
 	});
 
 	// @ts-ignore
-	const aktuatorList = ['Aktuator1', 'Aktuator2', 'Aktuator3', 'Aktuator4'];
+	const aktuatorList = ['Aktuator1', 'Aktuator2', 'Aktuator3', 'Aktuator4', 'Aktuator5', 'Aktuator6', 'Aktuator7', 'Aktuator8'];
 
 	const sensorLengasList = ['Sensor Lengas1', 'Sensor Lengas2'];
 
@@ -159,7 +161,7 @@
 			setupTitle = 'Setup Auto' + $myTask[idx].nama;
 			modeSelect = $myTask[idx].mode;
 			namaSelect = $myTask[idx].nama;
-			sensorSelect = $myTask[idx].nodeSensor - 1;
+			
 
 			//alert($myTask[idx].nama)
 			//set pilih aktuator sesai data
@@ -175,22 +177,26 @@
 				sensorList = sensorTemperatureList;
 				batasBawahValue = $myTask[idx].batasBawah;
 				batasAtasValue = $myTask[idx].batasAtas;
+				sensorSelect = $myTask[idx].sensorType - 1;
 				minSpinner = 10;
 				maxSpinner = 100;
 			} else if ($myTask[idx].mode === taskMode.MODE_HUMIDITY) {
 				sensorList = sensorHumidityList;
+				sensorSelect = $myTask[idx].sensorType - 3;
 				batasBawahValue = $myTask[idx].batasBawah;
 				batasAtasValue = $myTask[idx].batasAtas;
 				minSpinner = 10;
 				maxSpinner = 100;
 			} else if ($myTask[idx].mode === taskMode.MODE_LENGAS) {
 				sensorList = sensorLengasList;
+				sensorSelect = $myTask[idx].sensorType - 5;
 				batasBawahValue = $myTask[idx].batasBawah;
 				batasAtasValue = $myTask[idx].batasAtas;
 				minSpinner = 10;
 				maxSpinner = 100;
 			} else if ($myTask[idx].mode === taskMode.MODE_INTERMITTEN) {
 				sensorList = sensorIntermittentList;
+				sensorSelect = $myTask[idx].sensorType - 7;
 				batasBawahValue = $myTask[idx].batasBawah - 15;
 				batasAtasValue = $myTask[idx].batasAtas - 15;
 				minSpinner = -15;
@@ -216,7 +222,17 @@
 	function sensorSelect_click() {
 		const tp = 'auto' + $myTask[setupIndex].nama;
 
-		$myTask[setupIndex].nodeSensor = sensorSelect + 1;
+		if($myTask[setupIndex].mode === taskMode.MODE_TEMPERATURE){
+			$myTask[setupIndex].sensorType = sensorSelect + 1;
+		}else if($myTask[setupIndex].mode === taskMode.MODE_HUMIDITY){
+			$myTask[setupIndex].sensorType = sensorSelect + 3;
+		}else if($myTask[setupIndex].mode === taskMode.MODE_LENGAS){
+			$myTask[setupIndex].sensorType = sensorSelect + 5;
+		}else if($myTask[setupIndex].mode === taskMode.MODE_INTERMITTEN){
+			$myTask[setupIndex].sensorType = sensorSelect + 7;
+		}
+
+		
 
 		//alert("sensor temperture select: " + sensorSelect + 1);
 	}
@@ -233,7 +249,7 @@
 			sensorList = sensorTemperatureList;
 			batasBawahValue = $myTask[setupIndex].batasBawah;
 			batasAtasValue = $myTask[setupIndex].batasAtas;
-			sensorUseType = sensorType.NODE_TEMPERATURE;
+			sensorSelect = $myTask[setupIndex].sensorType - 1;
 			minSpinner = 10;
 			maxSpinner = 100;
 			namaSelect = 'Temperature';
@@ -241,7 +257,7 @@
 			sensorList = sensorHumidityList;
 			batasBawahValue = $myTask[setupIndex].batasBawah;
 			batasAtasValue = $myTask[setupIndex].batasAtas;
-			sensorUseType = sensorType.NODE_HUMIDITY;
+			sensorSelect = $myTask[setupIndex].sensorType - 3;
 			minSpinner = 10;
 			maxSpinner = 100;
 			namaSelect = 'Humidity';
@@ -249,7 +265,7 @@
 			sensorList = sensorLengasList;
 			batasBawahValue = $myTask[setupIndex].batasBawah;
 			batasAtasValue = $myTask[setupIndex].batasAtas;
-			sensorUseType = sensorType.NODE_SOIL_MOISTURE;
+			sensorSelect = $myTask[setupIndex].sensorType - 5;
 			minSpinner = 10;
 			maxSpinner = 100;
 			namaSelect = 'Lengas';
@@ -257,7 +273,7 @@
 			sensorList = sensorIntermittentList;
 			batasBawahValue = $myTask[setupIndex].batasBawah - 15;
 			batasAtasValue = $myTask[setupIndex].batasAtas - 15;
-			sensorUseType = sensorType.NODE_DISTANCE;
+			sensorSelect = $myTask[setupIndex].sensorType - 7;
 			minSpinner = -15;
 			maxSpinner = 15;
 			namaSelect = 'Intermittent';
@@ -363,7 +379,17 @@
 		if (setupMode === 0) {
 			$myTask[setupIndex].nama = namaSelect;
 			$myTask[setupIndex].mode = modeSelect;
-			$myTask[setupIndex].sensorType = sensorUseType;
+			let sensor=0
+			if(modeSelect === taskMode.MODE_TEMPERATURE){
+				sensor = sensorSelect + 1
+			}else if(modeSelect === taskMode.MODE_HUMIDITY){
+				sensor = sensorSelect + 3
+			}else if(modeSelect === taskMode.MODE_LENGAS){
+				sensor = sensorSelect + 5
+			}else if(modeSelect === taskMode.MODE_INTERMITTEN){
+				sensor = sensorSelect + 7
+			}
+			$myTask[setupIndex].sensorType = sensor;
 			kirimMsg(msgType.TASK, setupIndex, 'updateTask', JSON.stringify($myTask[setupIndex]));
 			console.log('Update Task: ' + JSON.stringify($myTask[setupIndex]));
 		} else {

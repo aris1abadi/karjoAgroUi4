@@ -37,22 +37,26 @@ export const msgType = {
   SENSOR: 3,
 };
 
-export const sensorType = {
+export const nodeType = {
   NODE_GATEWAY: 0,
-  NODE_TEMPERATURE: 1,
-  NODE_HUMIDITY: 2,
-  NODE_SOIL_MOISTURE: 3,
-  NODE_DISTANCE: 4,
-  NODE_BATTERY: 5,
-  NODE_RELAY1: 6,
-  NODE_RELAY2: 7,
-  NODE_RELAY3: 8,
-  NODE_RELAY4: 9,
-  NODE_RELAY5: 10,
-  NODE_RELAY6: 11,
-  NODE_RELAY7: 12,
-  NODE_RELAY8: 13,
-  NODE_DISPLAY: 14
+  NODE_TEMPERATURE1: 1,
+  NODE_TEMPERATURE2: 2,
+  NODE_HUMIDITY1: 3,
+  NODE_HUMIDITY2: 4,
+  NODE_SOIL_MOISTURE1: 5,
+  NODE_SOIL_MOISTURE2: 6,
+  NODE_DISTANCE1: 7,
+  NODE_DISTANCE2: 8,
+  NODE_BATTERY: 9,
+  NODE_RELAY1: 10,
+  NODE_RELAY2: 11,
+  NODE_RELAY3: 12,
+  NODE_RELAY4: 13,
+  NODE_RELAY5: 14,
+  NODE_RELAY6: 15,
+  NODE_RELAY7: 16,
+  NODE_RELAY8: 17,
+  NODE_DISPLAY: 18
 }
 
 export let flowAPersen = writable(50);
@@ -83,13 +87,14 @@ export let myTask = writable([{
   nama: 'Temperature',
   aktuator1: 1,
   aktuator2: 2,
+  aktuator1Val: 0,
+  aktuator2Val: 0,
   aktuatorMixA: 3,
   aktuatorMixB: 4,
   aktuatorMixC: 5,
   aktuatorMixOut: 6,
   aktuatorAduk: 7,
-  nodeSensor: 1,
-  sensorType: sensorType.NODE_TEMPERATURE,
+  sensorType: nodeType.NODE_TEMPERATURE1,
   sensorVal: 0,
   flowSensorA: 1,
   flowSensorB: 2,
@@ -108,19 +113,20 @@ export let myTask = writable([{
   mixAnama: 'Pupuk1',
   mixBnama: 'Pupuk2',
   mixCnama: 'Air',
-  lastSeen:"",
+  lastSeen: "",
   enable: 0,
 }, {
   nama: 'Humidity',
   aktuator1: 1,
   aktuator2: 2,
+  aktuator1Val: 0,
+  aktuator2Val: 0,
   aktuatorMixA: 3,
   aktuatorMixB: 4,
   aktuatorMixC: 5,
   aktuatorMixOut: 6,
   aktuatorAduk: 7,
-  nodeSensor: 1,
-  sensorType: sensorType.NODE_HUMIDITY,
+  sensorType: nodeType.NODE_HUMIDITY1,
   sensorVal: 0,
   flowSensorA: 1,
   flowSensorB: 2,
@@ -139,19 +145,20 @@ export let myTask = writable([{
   mixAnama: 'Pupuk1',
   mixBnama: 'Pupuk2',
   mixCnama: 'Air',
-  lastSeen:"",
+  lastSeen: "",
   enable: 0,
 }, {
   nama: 'Lengas',
   aktuator1: 1,
   aktuator2: 2,
+  aktuator1Val: 0,
+  aktuator2Val: 0,
   aktuatorMixA: 3,
   aktuatorMixB: 4,
   aktuatorMixC: 5,
   aktuatorMixOut: 6,
   aktuatorAduk: 7,
-  nodeSensor: 1,
-  sensorType: sensorType.NODE_SOIL_MOISTURE,
+  sensorType: nodeType.NODE_SOIL_MOISTURE1,
   sensorVal: 0,
   flowSensorA: 1,
   flowSensorB: 2,
@@ -170,19 +177,20 @@ export let myTask = writable([{
   mixAnama: 'Pupuk1',
   mixBnama: 'Pupuk2',
   mixCnama: 'Air',
-  lastSeen:"",
+  lastSeen: "",
   enable: 0,
 }, {
   nama: 'Intermitten',
   aktuator1: 1,
   aktuator2: 2,
+  aktuator1Val: 0,
+  aktuator2Val: 0,
   aktuatorMixA: 3,
   aktuatorMixB: 4,
   aktuatorMixC: 5,
   aktuatorMixOut: 6,
   aktuatorAduk: 7,
-  nodeSensor: 1,
-  sensorType: sensorType.NODE_DISTANCE,
+  sensorType: nodeType.NODE_DISTANCE1,
   sensorVal: 0,
   flowSensorA: 1,
   flowSensorB: 2,
@@ -201,7 +209,7 @@ export let myTask = writable([{
   mixAnama: 'Pupuk1',
   mixBnama: 'Pupuk2',
   mixCnama: 'Air',
-  lastSeen:"",
+  lastSeen: "",
   enable: 0,
 }]);
 
@@ -401,7 +409,7 @@ function cekMqttMsg(topic, msg_payload) {
     const typeTask = parseInt(topicMqtt[2]);
     const numberTask = topicMqtt[3];
     const msg_cmd = topicMqtt[4];
-    
+
     if (typeTask === msgType.KONTROL) {
       if (msg_cmd === "infoAllTask") {
         if (lastMsg != msg_payload) {
@@ -425,7 +433,7 @@ function cekMqttMsg(topic, msg_payload) {
           myTask.set(newArray); // Update store sekali setelah loop selesai
 
         }
-      }else if (msg_cmd === "getNetwork") {
+      } else if (msg_cmd === "getNetwork") {
         const net = JSON.parse(msg_payload)
         if (net.mode === 0) {
           networkSetup.mode = false
@@ -443,22 +451,22 @@ function cekMqttMsg(topic, msg_payload) {
       if (msg_cmd === "updateTask") {
         //console.log("mqtt msg: " + msg_payload)
         //msg  {"enable":0,"aktuator1":1,"aktuator2":2,"nodeSensor":1,"batasBawah":31,"batasAtas":81,"mode":2,"nama":"Lengas","sensorVal":80}
-        
-          let jsonData = JSON.parse(msg_payload); // Parse JSON 
-          //console.log("mqtt msg: " + JSON.stringify(jsonData))  
-          myTask.update(task => {
-            // Ubah nilai `a` pada elemen pertama
-            task[numberTask] = { ...task[numberTask], enable:jsonData.enable,aktuator1:jsonData.aktuator1,aktuator2:jsonData.aktuator2,nodeSensor:jsonData.nodeSensor,batasBawah:jsonData.batasBawah,batasAtas:jsonData.batasAtas,mode:jsonData.mode,nama:jsonData.nama }; // Ganti nilai a
-            return task; // Kembalikan array yang telah dimodifikasi
-          });
-          
-        
-      }else if (msg_cmd === "sensorValue") {
+
+        let jsonData = JSON.parse(msg_payload); // Parse JSON 
+        //console.log("mqtt msg: " + JSON.stringify(jsonData))  
+        myTask.update(task => {
+          // Ubah nilai `a` pada elemen pertama
+          task[numberTask] = { ...task[numberTask], enable: jsonData.enable, aktuator1: jsonData.aktuator1, aktuator2: jsonData.aktuator2, nodeSensor: jsonData.nodeSensor, batasBawah: jsonData.batasBawah, batasAtas: jsonData.batasAtas, mode: jsonData.mode, nama: jsonData.nama }; // Ganti nilai a
+          return task; // Kembalikan array yang telah dimodifikasi
+        });
+
+
+      } else if (msg_cmd === "updateSensor") {
         const timeNow = new Date();
         const sekarang = timeNow.toLocaleString()
 
         myTask.update(task => {
-          task[numberTask] = { ...task[numberTask], sensorVal: parseInt(msg_payload),lastSeen:sekarang };
+          task[numberTask] = { ...task[numberTask], sensorVal: parseInt(msg_payload), lastSeen: sekarang };
           return task;
         });
         //water level
