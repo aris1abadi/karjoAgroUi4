@@ -454,9 +454,10 @@ function cekMqttMsg(topic, msg_payload) {
 
         let jsonData = JSON.parse(msg_payload); // Parse JSON 
         //console.log("mqtt msg: " + JSON.stringify(jsonData))  
+        const lastSeenNow = new Date(jsonData.lastSeen * 1000);
         myTask.update(task => {
           // Ubah nilai `a` pada elemen pertama
-          task[numberTask] = { ...task[numberTask], enable: jsonData.enable, aktuator1: jsonData.aktuator1, aktuator2: jsonData.aktuator2, sensorType: jsonData.sensorType,sensorVal:jsonData.sensorVal, batasBawah: jsonData.batasBawah, batasAtas: jsonData.batasAtas, mode: jsonData.mode, nama: jsonData.nama,lastSeen: jsonData.lastSeen }; // Ganti nilai a
+          task[numberTask] = { ...task[numberTask], enable: jsonData.enable, aktuator1: jsonData.aktuator1, aktuator2: jsonData.aktuator2, sensorType: jsonData.sensorType,sensorVal:jsonData.sensorVal, batasBawah: jsonData.batasBawah, batasAtas: jsonData.batasAtas, mode: jsonData.mode, nama: jsonData.nama,lastSeen: lastSeenNow.toDateString() }; // Ganti nilai a
           return task; // Kembalikan array yang telah dimodifikasi
         });
 
