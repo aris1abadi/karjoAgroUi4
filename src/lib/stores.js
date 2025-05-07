@@ -113,7 +113,7 @@ export let myTask = writable([{
   mixAnama: 'Pupuk1',
   mixBnama: 'Pupuk2',
   mixCnama: 'Air',
-  lastSeen: "",
+  lastSeen: 0,
   enable: 0,
 }, {
   nama: 'Humidity',
@@ -145,7 +145,7 @@ export let myTask = writable([{
   mixAnama: 'Pupuk1',
   mixBnama: 'Pupuk2',
   mixCnama: 'Air',
-  lastSeen: "",
+  lastSeen: 0,
   enable: 0,
 }, {
   nama: 'Lengas',
@@ -177,7 +177,7 @@ export let myTask = writable([{
   mixAnama: 'Pupuk1',
   mixBnama: 'Pupuk2',
   mixCnama: 'Air',
-  lastSeen: "",
+  lastSeen: 0,
   enable: 0,
 }, {
   nama: 'Intermitten',
@@ -209,7 +209,7 @@ export let myTask = writable([{
   mixAnama: 'Pupuk1',
   mixBnama: 'Pupuk2',
   mixCnama: 'Air',
-  lastSeen: "",
+  lastSeen: 0,
   enable: 0,
 }]);
 
@@ -448,7 +448,7 @@ function cekMqttMsg(topic, msg_payload) {
         //console.log(JSON.stringify(networkSetup))
       }
     } else if (typeTask === msgType.TASK) {
-      if (msg_cmd === "updateTask") {
+      if (msg_cmd === "infoTask") {
         //console.log("mqtt msg: " + msg_payload)
         //msg  {"enable":0,"aktuator1":1,"aktuator2":2,"nodeSensor":1,"batasBawah":31,"batasAtas":81,"mode":2,"nama":"Lengas","sensorVal":80}
 
@@ -456,20 +456,9 @@ function cekMqttMsg(topic, msg_payload) {
         //console.log("mqtt msg: " + JSON.stringify(jsonData))  
         myTask.update(task => {
           // Ubah nilai `a` pada elemen pertama
-          task[numberTask] = { ...task[numberTask], enable: jsonData.enable, aktuator1: jsonData.aktuator1, aktuator2: jsonData.aktuator2, nodeSensor: jsonData.nodeSensor, batasBawah: jsonData.batasBawah, batasAtas: jsonData.batasAtas, mode: jsonData.mode, nama: jsonData.nama }; // Ganti nilai a
+          task[numberTask] = { ...task[numberTask], enable: jsonData.enable, aktuator1: jsonData.aktuator1, aktuator2: jsonData.aktuator2, sensorType: jsonData.sensorType,sensorVal:jsonData.sensorVal, batasBawah: jsonData.batasBawah, batasAtas: jsonData.batasAtas, mode: jsonData.mode, nama: jsonData.nama,lastSeen: jsonData.lastSeen }; // Ganti nilai a
           return task; // Kembalikan array yang telah dimodifikasi
         });
-
-
-      } else if (msg_cmd === "updateSensor") {
-        const timeNow = new Date();
-        const sekarang = timeNow.toLocaleString()
-
-        myTask.update(task => {
-          task[numberTask] = { ...task[numberTask], sensorVal: parseInt(msg_payload), lastSeen: sekarang };
-          return task;
-        });
-        //water level
 
 
       } else if (msg_cmd === "enable") {
