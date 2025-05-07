@@ -623,6 +623,8 @@ async function connect() {
       bleConnected = true;
       bleIsConnected.set(true)
       networkMode.set(networkSelect.MODE_BT)
+      //simpan deviceID
+      
       isStarted.set(true)
       ////window.term_.io.println('\r\n' + bleDevice.name + ' Connected.\n'
       tes();
