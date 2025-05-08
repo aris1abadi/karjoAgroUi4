@@ -113,7 +113,7 @@ export let myTask = writable([{
   mixAnama: 'Pupuk1',
   mixBnama: 'Pupuk2',
   mixCnama: 'Air',
-  lastSeen: 0,
+  lastSeen: "",
   enable: 0,
 }, {
   nama: 'Humidity',
@@ -145,7 +145,7 @@ export let myTask = writable([{
   mixAnama: 'Pupuk1',
   mixBnama: 'Pupuk2',
   mixCnama: 'Air',
-  lastSeen: 0,
+  lastSeen: "",
   enable: 0,
 }, {
   nama: 'Lengas',
@@ -177,7 +177,7 @@ export let myTask = writable([{
   mixAnama: 'Pupuk1',
   mixBnama: 'Pupuk2',
   mixCnama: 'Air',
-  lastSeen: 0,
+  lastSeen: "",
   enable: 0,
 }, {
   nama: 'Intermitten',
@@ -209,7 +209,7 @@ export let myTask = writable([{
   mixAnama: 'Pupuk1',
   mixBnama: 'Pupuk2',
   mixCnama: 'Air',
-  lastSeen: 0,
+  lastSeen: "",
   enable: 0,
 }]);
 
@@ -401,6 +401,26 @@ export function kirimMsg(type, num, cmd, msg) {
   }
 }
 
+function unixToLocalString(timestamp) {
+  const dateUTC = new Date(timestamp * 1000);
+  
+  // Format tanggal dan waktu saja
+  return dateUTC.toISOString()
+    .replace('T', ' ')
+    .replace(/\..+/, '');
+}
+
+function debugESP32Time(unixTimestamp) {
+  const dateUTC = new Date(unixTimestamp * 1000);
+  const dateLocal = new Date(unixTimestamp * 1000 + (7 * 3600 * 1000));
+  
+  console.log('UTC Time:', dateUTC.toISOString());
+  console.log('WIB Time (Manual):', dateLocal.toISOString());
+  console.log('Browser Local Time:', new Date().toString());
+}
+
+// Hasil: "29-04-2025 14:00:00" (WIB)
+
 function cekMqttMsg(topic, msg_payload) {
 
   const topicMqtt = topic ? topic.split("/") : [];
@@ -454,10 +474,13 @@ function cekMqttMsg(topic, msg_payload) {
 
         let jsonData = JSON.parse(msg_payload); // Parse JSON 
         //console.log("mqtt msg: " + JSON.stringify(jsonData))  
-        const lastSeenNow = new Date(jsonData.lastSeen * 1000);
+        //console.log('LastSeen: ' + jsonData.lastSeen);
+        //debugESP32Time(jsonData.lastSeen)
+        const lastSeenNow = unixToLocalString(jsonData.lastSeen);
+
         myTask.update(task => {
           // Ubah nilai `a` pada elemen pertama
-          task[numberTask] = { ...task[numberTask], enable: jsonData.enable, aktuator1: jsonData.aktuator1, aktuator2: jsonData.aktuator2, sensorType: jsonData.sensorType,sensorVal:jsonData.sensorVal, batasBawah: jsonData.batasBawah, batasAtas: jsonData.batasAtas, mode: jsonData.mode, nama: jsonData.nama,lastSeen: lastSeenNow.toDateString() }; // Ganti nilai a
+          task[numberTask] = { ...task[numberTask], enable: jsonData.enable, aktuator1: jsonData.aktuator1, aktuator2: jsonData.aktuator2, sensorType: jsonData.sensorType,sensorVal:jsonData.sensorVal, batasBawah: jsonData.batasBawah, batasAtas: jsonData.batasAtas, mode: jsonData.mode, nama: jsonData.nama,lastSeen: lastSeenNow}; // Ganti nilai a
           return task; // Kembalikan array yang telah dimodifikasi
         });
 
