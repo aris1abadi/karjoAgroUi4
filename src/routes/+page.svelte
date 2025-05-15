@@ -1,5 +1,5 @@
 <script>
-	import { Button, Modal, Spinner } from 'flowbite-svelte';
+	import { Button, Modal, Spinner, Tabs, TabItem } from 'flowbite-svelte';
 
 	import { onMount } from 'svelte';
 	import { get } from 'svelte/store';
@@ -24,9 +24,14 @@
 		spinnerShow,
 		modalMode,
 		isStarted,
-
-		nodeType
-
+		displayMode,
+		nodeType,
+		aktuatorList,
+		sensorHumidityList,
+		sensorTemperatureList,
+		sensorIntermittentList,
+		sensorLengasList,
+		display
 	} from '$lib/stores';
 
 	let defaultModal = false;
@@ -50,9 +55,22 @@
 	let targetCValue = 0;
 
 	let sensorSelect = 0;
-	let sensorList = ['sensor1', 'sensor2'];
-	let setupTitle = 'Setup';	
-	
+	let sensorList = [
+		{
+			nodeId: '----',
+			sensorType: nodeType.NODE_DISTANCE,
+			val: 0,
+			isActive: false
+		},
+		{
+			nodeId: '----',
+			sensorType: nodeType.NODE_DISTANCE,
+			val: 0,
+			isActive: false
+		}
+	];
+	let setupTitle = 'Setup';
+
 	// @ts-ignore
 	let lastMsg = null;
 
@@ -96,14 +114,7 @@
 	});
 
 	// @ts-ignore
-	const aktuatorList = ['Aktuator1', 'Aktuator2', 'Aktuator3', 'Aktuator4', 'Aktuator5', 'Aktuator6', 'Aktuator7', 'Aktuator8'];
 
-	const sensorLengasList = ['Sensor Lengas1', 'Sensor Lengas2'];
-
-	const sensorTemperatureList = ['Sensor Temperature1', 'Sensor Temperature2'];
-	const sensorHumidityList = ['Sensor Humidity1', 'Sensor Humidity2'];
-
-	const sensorIntermittentList = ['Sensor Intermittent1', 'Sensor Intermittent2'];
 	const serverList = ['server1', 'server2', 'server3'];
 
 	const modeList = [
@@ -159,11 +170,13 @@
 		defaultModal = true;
 		setupIndex = idx;
 		setupMode = mode;
+		//load aktuator
+		kirimMsg(msgType.KONTROL, setupIndex, 'getAllAktuator', '1');
+
 		if (mode === $modalMode.SET_TASK) {
 			setupTitle = 'Setup Auto' + $myTask[idx].nama;
 			modeSelect = $myTask[idx].mode;
 			namaSelect = $myTask[idx].nama;
-			
 
 			//alert($myTask[idx].nama)
 			//set pilih aktuator sesai data
@@ -179,26 +192,26 @@
 				sensorList = sensorTemperatureList;
 				batasBawahValue = $myTask[idx].batasBawah;
 				batasAtasValue = $myTask[idx].batasAtas;
-				sensorSelect = $myTask[idx].sensorType - 1;
+				sensorSelect = $myTask[idx].sensorUse - 1;
 				minSpinner = 10;
 				maxSpinner = 100;
 			} else if ($myTask[idx].mode === taskMode.MODE_HUMIDITY) {
 				sensorList = sensorHumidityList;
-				sensorSelect = $myTask[idx].sensorType - 3;
+				sensorSelect = $myTask[idx].sensorUse - 1;
 				batasBawahValue = $myTask[idx].batasBawah;
 				batasAtasValue = $myTask[idx].batasAtas;
 				minSpinner = 10;
 				maxSpinner = 100;
 			} else if ($myTask[idx].mode === taskMode.MODE_LENGAS) {
 				sensorList = sensorLengasList;
-				sensorSelect = $myTask[idx].sensorType - 5;
+				sensorSelect = $myTask[idx].sensorUse - 1;
 				batasBawahValue = $myTask[idx].batasBawah;
 				batasAtasValue = $myTask[idx].batasAtas;
 				minSpinner = 10;
 				maxSpinner = 100;
 			} else if ($myTask[idx].mode === taskMode.MODE_INTERMITTEN) {
 				sensorList = sensorIntermittentList;
-				sensorSelect = $myTask[idx].sensorType - 7;
+				sensorSelect = $myTask[idx].sensorUse - 1;
 				batasBawahValue = $myTask[idx].batasBawah - 15;
 				batasAtasValue = $myTask[idx].batasAtas - 15;
 				minSpinner = -15;
@@ -224,17 +237,15 @@
 	function sensorSelect_click() {
 		const tp = 'auto' + $myTask[setupIndex].nama;
 
-		if($myTask[setupIndex].mode === taskMode.MODE_TEMPERATURE){
-			$myTask[setupIndex].sensorType = sensorSelect + 1;
-		}else if($myTask[setupIndex].mode === taskMode.MODE_HUMIDITY){
-			$myTask[setupIndex].sensorType = sensorSelect + 3;
-		}else if($myTask[setupIndex].mode === taskMode.MODE_LENGAS){
-			$myTask[setupIndex].sensorType = sensorSelect + 5;
-		}else if($myTask[setupIndex].mode === taskMode.MODE_INTERMITTEN){
-			$myTask[setupIndex].sensorType = sensorSelect + 7;
+		if ($myTask[setupIndex].mode === taskMode.MODE_TEMPERATURE) {
+			$myTask[setupIndex].sensorUse = sensorSelect + 1;
+		} else if ($myTask[setupIndex].mode === taskMode.MODE_HUMIDITY) {
+			$myTask[setupIndex].sensorUse = sensorSelect + 1;
+		} else if ($myTask[setupIndex].mode === taskMode.MODE_LENGAS) {
+			$myTask[setupIndex].sensorUse = sensorSelect + 1;
+		} else if ($myTask[setupIndex].mode === taskMode.MODE_INTERMITTEN) {
+			$myTask[setupIndex].sensorUse = sensorSelect + 1;
 		}
-
-		
 
 		//alert("sensor temperture select: " + sensorSelect + 1);
 	}
@@ -251,7 +262,7 @@
 			sensorList = sensorTemperatureList;
 			batasBawahValue = $myTask[setupIndex].batasBawah;
 			batasAtasValue = $myTask[setupIndex].batasAtas;
-			sensorSelect = $myTask[setupIndex].sensorType - 1;
+			sensorSelect = $myTask[setupIndex].sensorUse - 1;
 			minSpinner = 10;
 			maxSpinner = 100;
 			namaSelect = 'Temperature';
@@ -259,7 +270,7 @@
 			sensorList = sensorHumidityList;
 			batasBawahValue = $myTask[setupIndex].batasBawah;
 			batasAtasValue = $myTask[setupIndex].batasAtas;
-			sensorSelect = $myTask[setupIndex].sensorType - 3;
+			sensorSelect = $myTask[setupIndex].sensorUse - 1;
 			minSpinner = 10;
 			maxSpinner = 100;
 			namaSelect = 'Humidity';
@@ -267,7 +278,7 @@
 			sensorList = sensorLengasList;
 			batasBawahValue = $myTask[setupIndex].batasBawah;
 			batasAtasValue = $myTask[setupIndex].batasAtas;
-			sensorSelect = $myTask[setupIndex].sensorType - 5;
+			sensorSelect = $myTask[setupIndex].sensorUse - 1;
 			minSpinner = 10;
 			maxSpinner = 100;
 			namaSelect = 'Lengas';
@@ -275,7 +286,7 @@
 			sensorList = sensorIntermittentList;
 			batasBawahValue = $myTask[setupIndex].batasBawah - 15;
 			batasAtasValue = $myTask[setupIndex].batasAtas - 15;
-			sensorSelect = $myTask[setupIndex].sensorType - 7;
+			sensorSelect = $myTask[setupIndex].sensorUse - 1;
 			minSpinner = -15;
 			maxSpinner = 15;
 			namaSelect = 'Intermittent';
@@ -381,28 +392,20 @@
 		if (setupMode === 0) {
 			$myTask[setupIndex].nama = namaSelect;
 			$myTask[setupIndex].mode = modeSelect;
-			let sensor=0
-			if(modeSelect === taskMode.MODE_TEMPERATURE){
-				sensor = sensorSelect + 1
-			}else if(modeSelect === taskMode.MODE_HUMIDITY){
-				sensor = sensorSelect + 3
-			}else if(modeSelect === taskMode.MODE_LENGAS){
-				sensor = sensorSelect + 5
-			}else if(modeSelect === taskMode.MODE_INTERMITTEN){
-				sensor = sensorSelect + 7
-			}
-			$myTask[setupIndex].sensorType = sensor;
+
+			$myTask[setupIndex].sensorUse = sensorSelect + 1;
 			kirimMsg(msgType.TASK, setupIndex, 'updateTask', JSON.stringify($myTask[setupIndex]));
 			console.log('Update Task: ' + JSON.stringify($myTask[setupIndex]));
 		} else {
 			//simpan
-			if (($networkMode === networkSelect.MODE_LOCAL) || ($networkMode === networkSelect.MODE_BT)) {
+			if ($networkMode === networkSelect.MODE_LOCAL || $networkMode === networkSelect.MODE_BT) {
 				kirimMsg(msgType.KONTROL, 0, 'updateServer', JSON.stringify($networkSetup));
 			} else {
 				//simpan kontrol id
 				kontrolID.set(inputID);
 			}
 		}
+		defaultModal = false;
 	}
 
 	let onlineCheck = false;
@@ -448,6 +451,135 @@
 		<div class="text-center text-sm">karjoAgro</div>
 		<div class="text-center font-mono text-4xl font-bold text-white">Agro Kontrol</div>
 		<div class="mb-8 text-center text-xs text-white">{$networkMode} {$kontrolID}</div>
+
+		<!--
+				{#if $displayMode === display.MODE_KONTROL}
+		<div class="no-select grid w-full grid-cols-2 gap-8">
+			{#each $myTask as dataShow, idx}
+				<div class="h-42 w-full rounded-lg bg-white p-0 shadow">
+					<button
+						class={dataShow.enable == 0
+							? 'font-monospace mt-0 h-8 w-full  bg-red-500 text-center text-sm font-bold text-white '
+							: 'font-monospace mt-0 h-8 w-full  bg-green-500 text-center text-sm font-bold text-white '}
+						on:click={() => enableClick(idx)}
+					>
+						{#if $spinnerShow[idx]}
+							<Spinner class="me-3" bg="white" size="5" color="yellow" />
+						{/if}
+
+						Auto{dataShow.nama}
+					</button>
+
+					<div
+						class="h-24 w-full justify-items-center"
+						on:dblclick={() => setupClick(idx, $modalMode.SET_TASK)}
+					>
+						{#if dataShow.mode === taskMode.MODE_INTERMITTEN}
+							<div class="mt-2 grid h-24 w-full grid-cols-3 place-items-center gap-2">
+								<div class="flex h-3/4 w-full justify-center">
+									<div class="h-full w-6 rounded-full bg-indigo-700">
+										<div
+											class="w-6 rounded-full rounded-b-none bg-gray-200"
+											style="height: {mapClamp(dataShow.sensorVal)}%;"
+										></div>
+									</div>
+								</div>
+
+								<div class="col-span-2">
+									<div class=" w-full content-center text-center font-mono text-2xl font-bold">
+										{dataShow.sensorVal}<small><small> cm</small></small>
+									</div>
+									<div style="font-size: x-small;text-align:center">
+										ON:{dataShow.batasBawah} ~ OFF:{dataShow.batasAtas}
+									</div>
+									<div style="font-size:xx-small;" class="text-center">lastSeen: {dataShow.lastSeen}</div>
+								</div>
+							</div>
+						{:else if dataShow.mode === taskMode.MODE_MIX}
+							<div class="flex h-full w-full justify-center">
+								<div class="mt-2 h-full w-5/6">
+									
+									<div class="mb-2 grid grid-cols-6">
+										<div class="col-span-2 text-left text-xs font-bold">
+											{dataShow.mixAnama}
+										</div>
+										<div class="col-span-3 h-4 rounded-full bg-gray-200">
+											<div
+												class="h-4 rounded-full bg-blue-600"
+												style="width: {$flowAPersen}%;"
+											></div>
+										</div>
+										<div class="pl-2 text-left text-xs font-bold">
+											{dataShow.targetMixA * 100}mL
+										</div>
+									</div>
+
+									
+									<div class="mb-2 grid grid-cols-6">
+										<div class="col-span-2 text-left text-xs font-bold">
+											{dataShow.mixBnama}
+										</div>
+										<div class="col-span-3 h-4 rounded-full bg-gray-200">
+											<div
+												class="h-4 rounded-full bg-blue-600"
+												style="width: {$flowBPersen}%;"
+											></div>
+										</div>
+										<div class="pl-2 text-left text-xs font-bold">
+											{dataShow.targetMixB * 100}mL
+										</div>
+									</div>
+
+									
+									<div class="grid grid-cols-6">
+										<div class="col-span-2 text-left text-xs font-bold">
+											{dataShow.mixCnama}
+										</div>
+										<div class="col-span-3 h-4 rounded-full bg-gray-200">
+											<div
+												class="h-4 rounded-full bg-blue-600"
+												style="width: {$flowCPersen}%;"
+											></div>
+										</div>
+										<div class="pl-2 text-left text-xs font-bold">
+											{dataShow.targetMixC * 100}mL
+										</div>
+									</div>
+									<div class="text-xs">
+										Aduk({dataShow.mixingTarget}detik)
+									</div>
+								</div>
+							</div>
+						{:else}
+							<div class="mt-4 text-center font-mono text-3xl font-bold">
+								{dataShow.sensorVal}{#if dataShow.mode === taskMode.MODE_HUMIDITY}%
+								{:else if dataShow.mode === taskMode.MODE_TEMPERATURE}&deg;C
+								{:else if dataShow.mode === taskMode.MODE_LENGAS}%
+								{/if}
+							</div>
+
+							<div class="mt-4 h-4 text-center font-mono text-xs">
+								{#if dataShow.mode === taskMode.MODE_HUMIDITY}
+									ON:{dataShow.batasBawah} ~ OFF:{dataShow.batasAtas}
+								{:else if dataShow.mode === taskMode.MODE_TEMPERATURE}
+									OFF:{dataShow.batasBawah} ~ ON:{dataShow.batasAtas}
+								{:else if dataShow.mode === taskMode.MODE_LENGAS}
+									ON:{dataShow.batasBawah} ~ OFF:{dataShow.batasAtas}
+								{/if}
+							</div>
+							<div style="font-size: xx-small; text-align:center;">lastSeen: {dataShow.lastSeen}</div>
+						{/if}
+					</div>
+				</div>
+			{/each}
+		</div>
+		{:else if $displayMode === display.MODE_AKTUATOR}
+		<div></div>
+		{:else if $displayMode === display.MODE_SENSOR}
+		<div></div>
+			
+		{/if}
+	-->
 		<div class="no-select grid w-full grid-cols-2 gap-8">
 			{#each $myTask as dataShow, idx}
 				<div class="h-42 w-full rounded-lg bg-white p-0 shadow">
@@ -487,7 +619,9 @@
 									<div style="font-size: x-small;text-align:center">
 										ON:{dataShow.batasBawah} ~ OFF:{dataShow.batasAtas}
 									</div>
-									<div style="font-size:xx-small;" class="text-center">lastSeen: {dataShow.lastSeen}</div>
+									<div style="font-size:xx-small;" class="text-center">
+										lastSeen: {dataShow.lastSeen}
+									</div>
 								</div>
 							</div>
 						{:else if dataShow.mode === taskMode.MODE_MIX}
@@ -562,7 +696,9 @@
 									ON:{dataShow.batasBawah} ~ OFF:{dataShow.batasAtas}
 								{/if}
 							</div>
-							<div style="font-size: xx-small; text-align:center;">lastSeen: {dataShow.lastSeen}</div>
+							<div style="font-size: xx-small; text-align:center;">
+								lastSeen: {dataShow.lastSeen}
+							</div>
 						{/if}
 					</div>
 				</div>
@@ -605,7 +741,7 @@
 		<p class="mt-2 text-xs">agro kontrol by karjoAgro</p>
 	</footer>
 {/if}
-<Modal class="w-8/10" title={setupTitle} bind:open={defaultModal} autoclose>
+<Modal class="w-8/10" title={setupTitle} bind:open={defaultModal}>
 	{#if setupMode === 0}
 		<div class="mx-auto grid max-w-sm grid-cols-2 gap-2">
 			<div class="col-span-2">
@@ -730,7 +866,7 @@
 						class="mb-1 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
 					>
 						{#each aktuatorList as aktuator, idx}
-							<option value={idx}>{aktuator}</option>
+							<option value={idx}>Aktuator({aktuator.nodeId}-{aktuator.nomerAktuator - 5})</option>
 						{/each}
 					</select>
 				</div>
@@ -743,7 +879,7 @@
 						class="mb-1 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
 					>
 						{#each aktuatorList as aktuator, idx}
-							<option value={idx}>{aktuator}</option>
+							<option value={idx}>Aktuator({aktuator.nodeId}-{aktuator.nomerAktuator - 5})</option>
 						{/each}
 					</select>
 				</div>
@@ -761,8 +897,18 @@
 					on:change={() => sensorSelect_click()}
 					class="mb-1 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
 				>
-					{#each sensorList as temp, idx}
-						<option value={idx}>{temp}</option>
+					{#each sensorList as sensor, idx}
+						<option value={idx}>
+							{#if sensor.sensorType === nodeType.NODE_TEMPERATURE}
+								Sensor Temperature {idx + 1} ({sensor.nodeId})
+							{:else if sensor.sensorType === nodeType.NODE_HUMIDITY}
+								Sensor Humidity {idx + 1} ({sensor.nodeId})
+							{:else if sensor.sensorType === nodeType.NODE_SOIL_MOISTURE}
+								Sensor Lengas {idx + 1} ({sensor.nodeId})
+							{:else if sensor.sensorType === nodeType.NODE_DISTANCE}
+								Sensor Intermittent {idx + 1} ({sensor.nodeId})
+							{/if}
+						</option>
 					{/each}
 				</select>
 			</div>
@@ -797,53 +943,53 @@
 			</div>
 		{/if}
 	{:else}
+		<Tabs tabStyle="underline">
+			<TabItem open title="Setup">
+				<!--for setupkontroller network-->
+				<div class="mx-auto grid max-w-sm grid-cols-2 gap-4">
+					{#if $networkMode === networkSelect.MODE_BT}
+						<div class="col-span-2">
+							<input
+								id="checked-checkbox"
+								type="checkbox"
+								on:change={() => networkChange()}
+								bind:checked={onlineCheck}
+								class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600"
+							/>
+							<label
+								for="checked-checkbox"
+								class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300">Online Mode</label
+							>
+						</div>
 
-		<!--for setupkontroller network-->
-		<div class="mx-auto grid max-w-sm grid-cols-2 gap-4">
-			{#if $networkMode === networkSelect.MODE_BT}
-				<div class="col-span-2">
-					<input
-						id="checked-checkbox"
-						type="checkbox"
-						on:change={() => networkChange()}
-						bind:checked={onlineCheck}
-						class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600"
-					/>
-					<label
-						for="checked-checkbox"
-						class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300">Online Mode</label
-					>
-				</div>
-				
+						<div class="col-span-2">Wifi Setup</div>
+						<input
+							type="text"
+							id="ssid"
+							bind:value={$networkSetup.ssid}
+							class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+							placeholder="SSID"
+							required
+						/>
 
-				<div class="col-span-2">Wifi Setup</div>
-				<input
-					type="text"
-					id="ssid"
-					bind:value={$networkSetup.ssid}
-					class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-					placeholder="SSID"
-					required
-				/>
-
-				<input
-					type="password"
-					id="password"
-					bind:value={$networkSetup.password}
-					class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-					placeholder="Password"
-					required
-				/>
-			{:else}
-				<input
-					type="text"
-					bind:value={inputID}
-					class="col-span-2 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-					placeholder={$kontrolID}
-					required
-				/>
-			{/if}
-			<!--
+						<input
+							type="password"
+							id="password"
+							bind:value={$networkSetup.password}
+							class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+							placeholder="Password"
+							required
+						/>
+					{:else}
+						<input
+							type="text"
+							bind:value={inputID}
+							class="col-span-2 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+							placeholder={$kontrolID}
+							required
+						/>
+					{/if}
+					<!--
 
 			<div class="col-span-2">Pilih Server</div>
 
@@ -859,54 +1005,74 @@
 					</select>
 
 		-->
-		</div>
+				</div>
+			</TabItem>
+			<TabItem title="Aktuator">
+				<div class="w-full">
+					{#each aktuatorList as aktuator, idx}
+						<div class="mb-4 grid h-10 w-full grid-cols-2 border ">
+							<button>Aktuator{idx+1} ({aktuator.nodeId} - {aktuator.nomerAktuator - 5})</button>
+							<button>{#if aktuator.val === 1}
+								ON
+								{:else}
+								OFF
+								
+							{/if}</button>
+						</div>
+					{/each}
+				</div>
+			</TabItem>
+			<TabItem title="Sensor">
+				<div class="w-full h-full">Sensor</div>
+			</TabItem>
+		</Tabs>
 	{/if}
 
 	<svelte:fragment slot="footer">
-		<Button color="red">Keluar</Button>
+		<Button color="red" on:click={() => (defaultModal = false)}>Keluar</Button>
 		<Button color="green" on:click={() => simpanTask()}>Simpan</Button>
 	</svelte:fragment>
 </Modal>
 
-  <style lang="postcss">
-    @reference "tailwindcss";
-    :global(html) {
-        width: 100%; /* Lebar elemen 100% dari lebar kontainer */
+<style lang="postcss">
+	@reference "tailwindcss";
+	:global(html) {
+		width: 100%; /* Lebar elemen 100% dari lebar kontainer */
 		height: 100%; /* Tinggi elemen */
 		background-image: url('/tumbuh1.jpeg'); /* URL gambar */
 		background-size: cover; /* Sesuaikan gambar agar menutupi elemen */
 		background-position: center; /* Pusatkan gambar */
 
 		background-repeat: no-repeat; /* Jangan ulangi gambar */
-    }
-    section {
-        display: flex;
-        flex-direction: column;
-        justify-content: top;
-        align-items: top;
-        flex: 0.6;
-        margin-top: 16px;
-        margin-left: 24px;
-        margin-right: 24px;
-    }
-    .no-select {
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
-    }
+	}
+	section {
+		display: flex;
+		flex-direction: column;
+		justify-content: top;
+		align-items: top;
+		flex: 0.6;
+		margin-top: 16px;
+		margin-left: 24px;
+		margin-right: 24px;
+	}
+	.no-select {
+		-webkit-user-select: none;
+		-moz-user-select: none;
+		-ms-user-select: none;
+		user-select: none;
+	}
 
-    footer {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        padding: 12px;
-    }
+	footer {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		padding: 12px;
+	}
 
-    @media (min-width: 480px) {
-        footer {
-            padding: 12px 0;
-        }
-    }
-  </style>
+	@media (min-width: 480px) {
+		footer {
+			padding: 12px 0;
+		}
+	}
+</style>

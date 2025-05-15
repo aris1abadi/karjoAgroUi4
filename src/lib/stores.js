@@ -29,6 +29,12 @@ export const taskMode = {
   MODE_MIX: 4,
 }
 
+export const display = {
+  MODE_KONTROL: 0,
+  MODE_AKTUATOR: 1,
+  MODE_SENSOR: 2,
+}
+
 
 export const msgType = {
   KONTROL: 0,
@@ -39,24 +45,20 @@ export const msgType = {
 
 export const nodeType = {
   NODE_GATEWAY: 0,
-  NODE_TEMPERATURE1: 1,
-  NODE_TEMPERATURE2: 2,
-  NODE_HUMIDITY1: 3,
-  NODE_HUMIDITY2: 4,
-  NODE_SOIL_MOISTURE1: 5,
-  NODE_SOIL_MOISTURE2: 6,
-  NODE_DISTANCE1: 7,
-  NODE_DISTANCE2: 8,
-  NODE_BATTERY: 9,
-  NODE_RELAY1: 10,
-  NODE_RELAY2: 11,
-  NODE_RELAY3: 12,
-  NODE_RELAY4: 13,
-  NODE_RELAY5: 14,
-  NODE_RELAY6: 15,
-  NODE_RELAY7: 16,
-  NODE_RELAY8: 17,
-  NODE_DISPLAY: 18
+  NODE_TEMPERATURE: 1,
+  NODE_HUMIDITY: 2,
+  NODE_SOIL_MOISTURE: 3,
+  NODE_DISTANCE: 4,
+  NODE_BATTERY: 5,
+  NODE_RELAY1: 6,
+  NODE_RELAY2: 7,
+  NODE_RELAY3: 8,
+  NODE_RELAY4: 9,
+  NODE_RELAY5: 10,
+  NODE_RELAY6: 11,
+  NODE_RELAY7: 12,
+  NODE_RELAY8: 13,
+  NODE_DISPLAY: 14
 }
 
 export let flowAPersen = writable(50);
@@ -69,11 +71,12 @@ export const mqttData = writable({});
 
 let bleConnected = false;
 export let bleIsConnected = writable(false);
-export let logDisplay = writable("log console\n");
+//export let logDisplay = writable("log console\n");
 export let mqttIsConnected = writable(false);
 
 export let networkMode = writable(networkSelect.MODE_OFF);
 //export let networkMode = writable(networkSelect.MODE_LOCAL);
+export let displayMode = writable(display.MODE_KONTROL);
 
 export const kontrolID = persisted('kontrolID', 'KA-E8C9')
 export let networkSetup = writable({ mode: false, ssid: "", password: "", mqttBroker: "", mqttPort: 1883 })
@@ -81,6 +84,65 @@ export let networkSetup = writable({ mode: false, ssid: "", password: "", mqttBr
 export let spinnerShow = writable([false, false, false, false]);
 
 export let isStarted = writable(false);
+export let aktuatorList = [{
+  nodeId:"0001",
+  nomerAktuator:nodeType.NODE_RELAY1,
+  val:0,
+  isActive:false
+},{
+  nodeId:"0001",
+  nomerAktuator:nodeType.NODE_RELAY2,
+  val:0,
+  isActive:false
+}
+]
+
+export let sensorLengasList = [{
+  nodeId:"----",
+  sensorType:nodeType.NODE_SOIL_MOISTURE,  
+  val:0,
+  isActive:false
+},{
+  nodeId:"----",
+  sensorType:nodeType.NODE_SOIL_MOISTURE,  
+  val:0,
+  isActive:false
+}];
+
+export let sensorTemperatureList = [{
+  nodeId:"0002",
+  sensorType:nodeType.NODE_TEMPERATURE,  
+  val:0,
+  isActive:false
+},{
+  nodeId:"0002",
+  sensorType:nodeType.NODE_TEMPERATURE,  
+  val:0,
+  isActive:false
+}];
+export let sensorHumidityList = [{
+  nodeId:"0002",
+  sensorType:nodeType.NODE_HUMIDITY,  
+  val:0,
+  isActive:false
+},{
+  nodeId:"0002",
+  sensorType:nodeType.NODE_HUMIDITY,  
+  val:0,
+  isActive:false
+}];
+
+export let sensorIntermittentList = [{
+  nodeId:"----",
+  sensorType:nodeType.NODE_DISTANCE,  
+  val:0,
+  isActive:false
+},{
+  nodeId:"----",
+  sensorType:nodeType.NODE_DISTANCE,  
+  val:0,
+  isActive:false
+}];
 
 export let waterLevel = 0;
 export let myTask = writable([{
@@ -94,7 +156,7 @@ export let myTask = writable([{
   aktuatorMixC: 5,
   aktuatorMixOut: 6,
   aktuatorAduk: 7,
-  sensorType: nodeType.NODE_TEMPERATURE1,
+  sensorUse: 1,
   sensorVal: 0,
   flowSensorA: 1,
   flowSensorB: 2,
@@ -126,7 +188,7 @@ export let myTask = writable([{
   aktuatorMixC: 5,
   aktuatorMixOut: 6,
   aktuatorAduk: 7,
-  sensorType: nodeType.NODE_HUMIDITY1,
+  sensorUse: 1,
   sensorVal: 0,
   flowSensorA: 1,
   flowSensorB: 2,
@@ -158,7 +220,7 @@ export let myTask = writable([{
   aktuatorMixC: 5,
   aktuatorMixOut: 6,
   aktuatorAduk: 7,
-  sensorType: nodeType.NODE_SOIL_MOISTURE1,
+  sensorUse: 1,
   sensorVal: 0,
   flowSensorA: 1,
   flowSensorB: 2,
@@ -190,7 +252,7 @@ export let myTask = writable([{
   aktuatorMixC: 5,
   aktuatorMixOut: 6,
   aktuatorAduk: 7,
-  sensorType: nodeType.NODE_DISTANCE1,
+  sensorUse: 1,
   sensorVal: 0,
   flowSensorA: 1,
   flowSensorB: 2,
@@ -224,7 +286,7 @@ let clientId = "CL" + Math.random().toString(16).substr(2, 4).toUpperCase();
 const brokerUrl = "wss://mqtt.eclipseprojects.io/mqtt:443";
 //const brokerUrl = "ws://mqtt.eclipseprojects.io/mqtt:80";
 
-let lastMsg = null;
+let lastMsg = "";
 let myTaskNow = myTask;
 let mqttConnected = false
 let client = null;
@@ -267,11 +329,11 @@ export function initMqtt() {
   client.on("connect", () => {
     mqttConnected = true
     mqttIsConnected.set(true)
-    console.log("Connected to MQTT broker");
+    console.log("Try connect to network");
     client.subscribe(subMqtt, { qos: 0 });
     let pubStatus = pubMqtt + "kontrol/0/status";
-    console.log("mqtt conected");
-    let getmyTask = pubMqtt + "0/0/getAllTask";
+    console.log("Online");
+    let getmyTask = pubMqtt + "0/0/getAllStatus";
     mqttClient.set(client); // Set mqttClient di davalue=""lam store
     networkMode.set(networkSelect.MODE_MQTT)
     isStarted.set(true)
@@ -298,7 +360,7 @@ export function initMqtt() {
   client.on('close', () => {
     mqttConnected = false;
     mqttIsConnected.set(false)
-    console.log('Disconnected from MQTT broker');
+    console.log('Disconnected from network');
     networkMode.set(networkSelect.MODE_OFF)
     isStarted.set(false)
   });
@@ -403,7 +465,7 @@ export function kirimMsg(type, num, cmd, msg) {
 
 function unixToLocalString(timestamp) {
   const dateUTC = new Date(timestamp * 1000);
-  
+
   // Format tanggal dan waktu saja
   return dateUTC.toISOString()
     .replace('T', ' ')
@@ -413,7 +475,7 @@ function unixToLocalString(timestamp) {
 function debugESP32Time(unixTimestamp) {
   const dateUTC = new Date(unixTimestamp * 1000);
   const dateLocal = new Date(unixTimestamp * 1000 + (7 * 3600 * 1000));
-  
+
   console.log('UTC Time:', dateUTC.toISOString());
   console.log('WIB Time (Manual):', dateLocal.toISOString());
   console.log('Browser Local Time:', new Date().toString());
@@ -434,24 +496,72 @@ function cekMqttMsg(topic, msg_payload) {
       if (msg_cmd === "infoAllTask") {
         if (lastMsg != msg_payload) {
           lastMsg = msg_payload;
-          let msgSplit = msg_payload.split(";");
-          let newArray = []; // Array sementara untuk menampung data
-
-          // myTask.set([]); // Kosongkan store sebelum diisi ulang
-
-          for (let i = 0; i < msgSplit.length; i++) {
-            try {
-              let jsonData = JSON.parse(msgSplit[i]); // Parse JSON              
-              let nm = jsonData.nama;
-              jsonData.nama = nm.trim();
-              newArray.push(jsonData); // Simpan data di array sementara
-              //console.log(jsonData);  // Debug: Tampilkan objek JSON
-            } catch (e) {
-              console.error("Error parsing JSON:", e);
+          const newArray = JSON.parse(msg_payload).task;
+          for(let i = 0;i<newArray.length;i++){
+            if(newArray[i].lastSeen < 1000){
+              newArray[i].lastSeen = '-'
+            }else{
+            newArray[i].lastSeen = unixToLocalString(newArray[i].lastSeen);
             }
           }
           myTask.set(newArray); // Update store sekali setelah loop selesai
+          //console.log(newArray)
 
+        }
+      } else if (msg_cmd === "infoAllNode") {
+
+
+      } else if (msg_cmd === "InfoAllAktuator") {
+        if (lastMsg != msg_payload) {
+          lastMsg = msg_payload;
+          const newAktuator = JSON.parse(msg_payload).aktuator;
+          if(newAktuator.length > 0){
+          aktuatorList = newAktuator
+         
+        }
+          //console.log(aktuatorList)
+        }
+      } else if (msg_cmd === "InfoAllTemperatureSensor") {
+        if (lastMsg != msg_payload) {
+          lastMsg = msg_payload;
+          const newTemperatureSensor = JSON.parse(msg_payload).TemperatureSensor;
+          if(newTemperatureSensor.length > 0){
+          sensorTemperatureList = [];
+
+          for (let i = 0; i < newTemperatureSensor.length; i++) {
+            sensorTemperatureList.push('SensorTemperature' + (i + 1) + '(' + newTemperatureSensor[i].nodeId + ')')
+          }
+        }
+          //console.log(sensorTemperatureList)
+        }
+      } else if (msg_cmd === "InfoAllHumiditySensor") {
+        if (lastMsg != msg_payload) {
+          lastMsg = msg_payload;
+          const newHumiditySensor = JSON.parse(msg_payload).HumiditySensor;
+          if(newHumiditySensor.length > 0){
+          sensorHumidityList = newHumiditySensor;
+
+        }
+          //console.log(sensorHumidityList)
+        }
+      } else if (msg_cmd === "InfoAllHumiditySensor") {
+        if (lastMsg != msg_payload) {
+          lastMsg = msg_payload;
+          const newSoilSensor = JSON.parse(msg_payload).SoilSensor;
+          if(newSoilSensor.length > 0){
+          sensorLengasList = newSoilSensor;
+        }
+          //console.log(sensorLengasList)
+        }
+      }else if (msg_cmd === "InfoAllDistanceSensor") {
+        if (lastMsg != msg_payload) {
+          lastMsg = msg_payload;
+          const newDistanceSensor = JSON.parse(msg_payload).DistanceSensor;
+          if(newDistanceSensor.length > 0){
+          sensorIntermittentList = newDistanceSensor;
+
+        }
+          //console.log(sensorIntermittentList)
         }
       } else if (msg_cmd === "getNetwork") {
         const net = JSON.parse(msg_payload)
@@ -472,7 +582,7 @@ function cekMqttMsg(topic, msg_payload) {
         //console.log("mqtt msg: " + msg_payload)
         //msg  {"enable":0,"aktuator1":1,"aktuator2":2,"nodeSensor":1,"batasBawah":31,"batasAtas":81,"mode":2,"nama":"Lengas","sensorVal":80}
 
-        let jsonData = JSON.parse(msg_payload); // Parse JSON 
+        const jsonData = JSON.parse(msg_payload); // Parse JSON 
         //console.log("mqtt msg: " + JSON.stringify(jsonData))  
         //console.log('LastSeen: ' + jsonData.lastSeen);
         //debugESP32Time(jsonData.lastSeen)
@@ -480,7 +590,7 @@ function cekMqttMsg(topic, msg_payload) {
 
         myTask.update(task => {
           // Ubah nilai `a` pada elemen pertama
-          task[numberTask] = { ...task[numberTask], enable: jsonData.enable, aktuator1: jsonData.aktuator1, aktuator2: jsonData.aktuator2, sensorType: jsonData.sensorType,sensorVal:jsonData.sensorVal, batasBawah: jsonData.batasBawah, batasAtas: jsonData.batasAtas, mode: jsonData.mode, nama: jsonData.nama,lastSeen: lastSeenNow}; // Ganti nilai a
+          task[numberTask] = { ...task[numberTask], enable: jsonData.enable, aktuator1: jsonData.aktuator1, aktuator2: jsonData.aktuator2, sensorUse: jsonData.sensorUse, sensorVal: jsonData.sensorVal, batasBawah: jsonData.batasBawah, batasAtas: jsonData.batasAtas, mode: jsonData.mode, nama: jsonData.nama, lastSeen: lastSeenNow }; // Ganti nilai a
           return task; // Kembalikan array yang telah dimodifikasi
         });
 
@@ -507,7 +617,7 @@ function cekMqttMsg(topic, msg_payload) {
         });
       } else if (msg_cmd === "jadwal") {
         // myTaskNow[numberTask].aktuatorUse2 = parseInt(msg_payload);
-      } else if (msg_cmd === "nodeSensor") {
+      } else if (msg_cmd === "sensorUse") {
         myTask.update(task => {
           task[numberTask] = { ...task[numberTask], nodeSensor: parseInt(msg_payload) };
           return task;
@@ -543,9 +653,6 @@ function cekMqttMsg(topic, msg_payload) {
           return task;
         });
       }
-
-    } else {
-
 
     }
   }
@@ -590,10 +697,10 @@ export function bleConnectionToggle() {
 
 async function connect() {
   if (!navigator.bluetooth) {
-    logDisplay += "WebBluetooth API is not available.\r\n";
+    ////logDisplay += "WebBluetooth API is not available.\r\n";
     return;
   }
-  logDisplay += "Requesting Bluetooth Device...\n";
+  ////logDisplay += "Requesting Bluetooth Device...\n";
   navigator.bluetooth
     .requestDevice({
       //filters: [{services: []}]
@@ -602,8 +709,8 @@ async function connect() {
     })
     .then((device) => {
       bleDevice = device;
-      logDisplay += "Found " + device.name;
-      logDisplay += "Connecting to GATT Server...\n";
+      //logDisplay += "Found " + device.name;
+      //logDisplay += "Connecting to GATT Server...\n";
       bleDevice.addEventListener(
         "gattserverdisconnected",
         onDisconnected,
@@ -611,35 +718,35 @@ async function connect() {
       return device.gatt.connect();
     })
     .then((server) => {
-      logDisplay += "Locate NUS service\n";
+      //logDisplay += "Locate NUS service\n";
       return server.getPrimaryService(bleNusServiceUUID);
     })
     .then((service) => {
       nusService = service;
-      logDisplay += "Found NUS service: " + service.uuid;
+      //logDisplay += "Found NUS service: " + service.uuid;
     })
     .then(() => {
-      logDisplay += "Locate RX characteristic\n";
+      //logDisplay += "Locate RX characteristic\n";
       return nusService.getCharacteristic(bleNusCharRXUUID);
     })
     .then((characteristic) => {
       rxCharacteristic = characteristic;
-      logDisplay += "Found RX characteristic\n";
+      //logDisplay += "Found RX characteristic\n";
     })
     .then(() => {
-      logDisplay += "Locate TX characteristic\n";
+      //logDisplay += "Locate TX characteristic\n";
       return nusService.getCharacteristic(bleNusCharTXUUID);
     })
     .then((characteristic) => {
       txCharacteristic = characteristic;
-      logDisplay += "Found TX characteristic\n";
+      //logDisplay += "Found TX characteristic\n";
     })
     .then(() => {
-      logDisplay += "Enable notifications\n";
+      //logDisplay += "Enable notifications\n";
       return txCharacteristic.startNotifications();
     })
     .then(() => {
-      logDisplay += "Notifications started\n";
+      //logDisplay += "Notifications started\n";
       txCharacteristic.addEventListener(
         "characteristicvaluechanged",
         handleNotifications,
@@ -648,14 +755,14 @@ async function connect() {
       bleIsConnected.set(true)
       networkMode.set(networkSelect.MODE_BT)
       //simpan deviceID
-      
+
       isStarted.set(true)
       ////window.term_.io.println('\r\n' + bleDevice.name + ' Connected.\n'
       tes();
       //setConnButtonState(true);
     })
     .catch((error) => {
-      logDisplay += error;
+      //logDisplay += error;
       //window.term_.io.println('' + error);
       if (bleDevice && bleDevice.gatt.connected) {
         bleDevice.gatt.disconnect();
@@ -665,10 +772,10 @@ async function connect() {
 
 function disconnect() {
   if (!bleDevice) {
-    logDisplay += "No Bluetooth Device connected...\n";
+    //logDisplay += "No Bluetooth Device connected...\n";
     return;
   }
-  logDisplay += "Disconnecting from Bluetooth Device...\n";
+  //logDisplay += "Disconnecting from Bluetooth Device...\n";
   if (bleDevice.gatt.connected) {
     bleDevice.gatt.disconnect();
     bleConnected = false;
@@ -676,10 +783,10 @@ function disconnect() {
     networkMode.set(networkSelect.MODE_OFF)
     isStarted.set(false)
     //setConnButtonState(false);
-    logDisplay +=
-      "Bluetooth Device connected: " + bleDevice.gatt.connected;
+    //logDisplay +=
+    "Bluetooth Device connected: " + bleDevice.gatt.connected;
   } else {
-    logDisplay += "> Bluetooth Device is already disconnected\n";
+    //logDisplay += "> Bluetooth Device is already disconnected\n";
   }
 }
 
@@ -688,11 +795,11 @@ function onDisconnected() {
   bleIsConnected.set(false)
   networkMode.set(networkSelect.MODE_OFF)
   isStarted.set(false)
-  logDisplay += "\r\n" + bleDevice.name + " Disconnected.";
+  //logDisplay += "\r\n" + bleDevice.name + " Disconnected.";
 }
 
 function handleNotifications(event) {
-  logDisplay += "btMsg:\n";
+  //logDisplay += "btMsg:\n";
   let value = event.target.value;
   // Convert raw data bytes to character values and use these to
   // construct a string.
@@ -708,23 +815,34 @@ function handleNotifications(event) {
     }
   }
   if (endMsg) {
-    if (btBuff.length > 5) {
-      logDisplay += btBuff;
+    if (btBuff.length > 20) {
+      //logDisplay += btBuff;
 
       let btMsgSplit = btBuff.split('@')
       const topic = btMsgSplit[0]
       const msg = btMsgSplit[1]
 
-      cekMqttMsg(topic, msg)
+      const topicSplit = topic.split('-')
+      if (topicSplit[0] === 'abadinet') {
+        cekMqttMsg(topic, msg)
 
+      } else {
+        debugMsgReceive(btBuff)
+      }
+    } else {
+      debugMsgReceive(btBuff)
     }
     btBuff = "";
   }
 }
 
+function debugMsgReceive(msg) {
+  console.log(msg)
+}
+
 function nusSendString(s) {
   if (bleDevice && bleDevice.gatt.connected) {
-    //logDisplay += 'send: ' + s;
+    ////logDisplay += 'send: ' + s;
     s += "\n";
     let val_arr = new Uint8Array(s.length);
     for (let i = 0; i < s.length; i++) {
@@ -733,7 +851,7 @@ function nusSendString(s) {
     }
     sendNextChunk(val_arr);
   } else {
-    logDisplay += "Not connected to a device yet.";
+    //logDisplay += "Not connected to a device yet.";
   }
 }
 
