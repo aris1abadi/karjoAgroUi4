@@ -1,8 +1,9 @@
 <script>
-	import { Button, Modal, Spinner, Tabs, TabItem } from 'flowbite-svelte';
+	import { Button, Modal, Spinner, Tabs, TabItem, Toggle } from 'flowbite-svelte';
 
 	import { onMount } from 'svelte';
 	import { get } from 'svelte/store';
+	import RangeSlider from 'svelte-range-slider-pips';
 
 	import {
 		myTask,
@@ -31,6 +32,8 @@
 		sensorTemperatureList,
 		sensorIntermittentList,
 		sensorLengasList,
+		isDemo,
+		demoWait,
 		display
 	} from '$lib/stores';
 
@@ -73,6 +76,9 @@
 
 	// @ts-ignore
 	let lastMsg = null;
+
+	let lastDemo = $isDemo
+	let demoVal = lastDemo
 
 	// @ts-ignore
 	let header = 'Temperature';
@@ -124,6 +130,7 @@
 		'Mode intermittent',
 		'Mode Mix'
 	];
+	let rangeValue = [20, 80];
 
 	let setupIndex = 0;
 	let setupMode = $modalMode.SET_TASK; //0 mode set task,1 mode set device,3 mode alert
@@ -171,7 +178,7 @@
 		setupIndex = idx;
 		setupMode = mode;
 		//load aktuator
-		kirimMsg(msgType.KONTROL, setupIndex, 'getAllAktuator', '1');
+		//kirimMsg(msgType.KONTROL, setupIndex, 'getAllAktuator', '1');
 
 		if (mode === $modalMode.SET_TASK) {
 			setupTitle = 'Setup Auto' + $myTask[idx].nama;
@@ -186,40 +193,42 @@
 			targetAValue = $myTask[idx].targetMixA * 100;
 			targetBValue = $myTask[idx].targetMixB * 100;
 			targetCValue = $myTask[idx].targetMixC * 100;
+			rangeValue[0] = $myTask[idx].batasBawah;
+			rangeValue[1] = $myTask[idx].batasAtas;
 
 			// sensorList = sensorTemperatureList
 			if ($myTask[idx].mode === taskMode.MODE_TEMPERATURE) {
 				sensorList = sensorTemperatureList;
-				batasBawahValue = $myTask[idx].batasBawah;
-				batasAtasValue = $myTask[idx].batasAtas;
+				//batasBawahValue = $myTask[idx].batasBawah;
+				//batasAtasValue = $myTask[idx].batasAtas;
 				sensorSelect = $myTask[idx].sensorUse - 1;
 				minSpinner = 10;
 				maxSpinner = 100;
 			} else if ($myTask[idx].mode === taskMode.MODE_HUMIDITY) {
 				sensorList = sensorHumidityList;
 				sensorSelect = $myTask[idx].sensorUse - 1;
-				batasBawahValue = $myTask[idx].batasBawah;
-				batasAtasValue = $myTask[idx].batasAtas;
+				//batasBawahValue = $myTask[idx].batasBawah;
+				//batasAtasValue = $myTask[idx].batasAtas;
 				minSpinner = 10;
 				maxSpinner = 100;
 			} else if ($myTask[idx].mode === taskMode.MODE_LENGAS) {
 				sensorList = sensorLengasList;
 				sensorSelect = $myTask[idx].sensorUse - 1;
-				batasBawahValue = $myTask[idx].batasBawah;
-				batasAtasValue = $myTask[idx].batasAtas;
+				//batasBawahValue = $myTask[idx].batasBawah;
+				//batasAtasValue = $myTask[idx].batasAtas;
 				minSpinner = 10;
 				maxSpinner = 100;
 			} else if ($myTask[idx].mode === taskMode.MODE_INTERMITTEN) {
 				sensorList = sensorIntermittentList;
 				sensorSelect = $myTask[idx].sensorUse - 1;
-				batasBawahValue = $myTask[idx].batasBawah - 15;
-				batasAtasValue = $myTask[idx].batasAtas - 15;
+				//batasBawahValue = $myTask[idx].batasBawah - 15;
+				//batasAtasValue = $myTask[idx].batasAtas - 15;
 				minSpinner = -15;
 				maxSpinner = 15;
 			}
 		} else if (mode === $modalMode.SET_DEVICE) {
 			//mode setup device
-			setupTitle = 'Setup ' + $kontrolID;
+			setupTitle = 'Kontrol ' + $kontrolID;
 		}
 	}
 
@@ -260,32 +269,41 @@
 		// sensorList = sensorTemperatureList
 		if (modeSelect === taskMode.MODE_TEMPERATURE) {
 			sensorList = sensorTemperatureList;
-			batasBawahValue = $myTask[setupIndex].batasBawah;
-			batasAtasValue = $myTask[setupIndex].batasAtas;
+			//batasBawahValue = $myTask[setupIndex].batasBawah;
+			//batasAtasValue = $myTask[setupIndex].batasAtas;
+			rangeValue[0] = $myTask[setupIndex].batasBawah;
+			rangeValue[1] = $myTask[setupIndex].batasAtas;
+
 			sensorSelect = $myTask[setupIndex].sensorUse - 1;
 			minSpinner = 10;
 			maxSpinner = 100;
 			namaSelect = 'Temperature';
 		} else if (modeSelect === taskMode.MODE_HUMIDITY) {
 			sensorList = sensorHumidityList;
-			batasBawahValue = $myTask[setupIndex].batasBawah;
-			batasAtasValue = $myTask[setupIndex].batasAtas;
+			//batasBawahValue = $myTask[setupIndex].batasBawah;
+			//batasAtasValue = $myTask[setupIndex].batasAtas;
+			rangeValue[0] = $myTask[setupIndex].batasBawah;
+			rangeValue[1] = $myTask[setupIndex].batasAtas;
 			sensorSelect = $myTask[setupIndex].sensorUse - 1;
 			minSpinner = 10;
 			maxSpinner = 100;
 			namaSelect = 'Humidity';
 		} else if (modeSelect === taskMode.MODE_LENGAS) {
 			sensorList = sensorLengasList;
-			batasBawahValue = $myTask[setupIndex].batasBawah;
-			batasAtasValue = $myTask[setupIndex].batasAtas;
+			//batasBawahValue = $myTask[setupIndex].batasBawah;
+			//batasAtasValue = $myTask[setupIndex].batasAtas;
+			rangeValue[0] = $myTask[setupIndex].batasBawah;
+			rangeValue[1] = $myTask[setupIndex].batasAtas;
 			sensorSelect = $myTask[setupIndex].sensorUse - 1;
 			minSpinner = 10;
 			maxSpinner = 100;
 			namaSelect = 'Lengas';
 		} else if (modeSelect === taskMode.MODE_INTERMITTEN) {
 			sensorList = sensorIntermittentList;
-			batasBawahValue = $myTask[setupIndex].batasBawah - 15;
-			batasAtasValue = $myTask[setupIndex].batasAtas - 15;
+			//batasBawahValue = $myTask[setupIndex].batasBawah - 15;
+			//batasAtasValue = $myTask[setupIndex].batasAtas - 15;
+			rangeValue[0] = $myTask[setupIndex].batasBawah;
+			rangeValue[1] = $myTask[setupIndex].batasAtas;
 			sensorSelect = $myTask[setupIndex].sensorUse - 1;
 			minSpinner = -15;
 			maxSpinner = 15;
@@ -293,7 +311,7 @@
 		}
 		setupTitle = 'Setup Auto' + namaSelect;
 
-		//console.log("Mode select: " + modeList[modeSelect])
+		console.log('rangeValue: ' + rangeValue);
 	}
 
 	let serverSelect = 0;
@@ -312,6 +330,7 @@
 		}
 			*/
 		$myTask[setupIndex].batasBawah = batasBawahValue;
+		rangeValue[0] = batasBawahValue;
 
 		//alert("Target bawah: " + batasBawahValue);
 	}
@@ -326,8 +345,13 @@
 		}
 			*/
 		$myTask[setupIndex].batasAtas = batasAtasValue;
+		rangeValue[1] = batasAtasValue;
 
 		//alert("Target atas: " + batasAtasValue);
+	}
+	function rangeChange() {
+		$myTask[setupIndex].batasBawah = rangeValue[0];
+		$myTask[setupIndex].batasAtas = rangeValue[1];
 	}
 
 	function mapClamp(x) {
@@ -395,7 +419,7 @@
 
 			$myTask[setupIndex].sensorUse = sensorSelect + 1;
 			kirimMsg(msgType.TASK, setupIndex, 'updateTask', JSON.stringify($myTask[setupIndex]));
-			console.log('Update Task: ' + JSON.stringify($myTask[setupIndex]));
+			//console.log('Update Task: ' + JSON.stringify($myTask[setupIndex]));
 		} else {
 			//simpan
 			if ($networkMode === networkSelect.MODE_LOCAL || $networkMode === networkSelect.MODE_BT) {
@@ -419,6 +443,26 @@
 		}
 	}
 
+	function demoChange() {
+		
+		//console.log($isDemo)
+		
+		$demoWait = true;
+		setTimeout(() => {
+			$demoWait = false;
+			demoVal = lastDemo
+		}, 5000);
+
+		let demomsg = '0';
+		if (demoVal) {
+			demomsg = '1';
+			lastDemo = true
+		}else{
+			lastDemo = false;
+		}
+		kirimMsg(msgType.KONTROL, 0, 'demoMode', demomsg);
+	}
+
 	//update myTask
 	// $: myTask = myTask
 </script>
@@ -429,20 +473,27 @@
 </svelte:head>
 
 {#if !$isStarted}
-	<div class="grid grid-cols-3">
+	<div class="grid w-full grid-cols-5 px-2">
 		<div></div>
-		<Button color="light" class="mt-24 h-20 w-full" on:click={() => mqttConnectionToggle()}>
+		<Button
+			color="light"
+			class="col-span-3 mt-24 h-20 w-full"
+			on:click={() => mqttConnectionToggle()}
+		>
 			Sambung ke jaringan
 		</Button>
 		<div></div>
 		<div></div>
-		<Button color="blue" class="mt-8 h-20 w-full" on:click={() => bleConnectionToggle()}>
+		<Button color="blue" class="col-span-3 mt-8 h-20 w-full" on:click={() => bleConnectionToggle()}>
 			Sambung ke Local
 		</Button>
 		<div></div>
 		<div></div>
-		<Button class="mt-8 h-20 w-full" on:click={() => setupClick(1, $modalMode.SET_DEVICE)}>
-			Setup
+		<Button
+			class="col-span-3 mt-8 h-20 w-full"
+			on:click={() => setupClick(1, $modalMode.SET_DEVICE)}
+		>
+			Setup {$kontrolID}
 		</Button>
 	</div>
 {:else}
@@ -452,134 +503,6 @@
 		<div class="text-center font-mono text-4xl font-bold text-white">Agro Kontrol</div>
 		<div class="mb-8 text-center text-xs text-white">{$networkMode} {$kontrolID}</div>
 
-		<!--
-				{#if $displayMode === display.MODE_KONTROL}
-		<div class="no-select grid w-full grid-cols-2 gap-8">
-			{#each $myTask as dataShow, idx}
-				<div class="h-42 w-full rounded-lg bg-white p-0 shadow">
-					<button
-						class={dataShow.enable == 0
-							? 'font-monospace mt-0 h-8 w-full  bg-red-500 text-center text-sm font-bold text-white '
-							: 'font-monospace mt-0 h-8 w-full  bg-green-500 text-center text-sm font-bold text-white '}
-						on:click={() => enableClick(idx)}
-					>
-						{#if $spinnerShow[idx]}
-							<Spinner class="me-3" bg="white" size="5" color="yellow" />
-						{/if}
-
-						Auto{dataShow.nama}
-					</button>
-
-					<div
-						class="h-24 w-full justify-items-center"
-						on:dblclick={() => setupClick(idx, $modalMode.SET_TASK)}
-					>
-						{#if dataShow.mode === taskMode.MODE_INTERMITTEN}
-							<div class="mt-2 grid h-24 w-full grid-cols-3 place-items-center gap-2">
-								<div class="flex h-3/4 w-full justify-center">
-									<div class="h-full w-6 rounded-full bg-indigo-700">
-										<div
-											class="w-6 rounded-full rounded-b-none bg-gray-200"
-											style="height: {mapClamp(dataShow.sensorVal)}%;"
-										></div>
-									</div>
-								</div>
-
-								<div class="col-span-2">
-									<div class=" w-full content-center text-center font-mono text-2xl font-bold">
-										{dataShow.sensorVal}<small><small> cm</small></small>
-									</div>
-									<div style="font-size: x-small;text-align:center">
-										ON:{dataShow.batasBawah} ~ OFF:{dataShow.batasAtas}
-									</div>
-									<div style="font-size:xx-small;" class="text-center">lastSeen: {dataShow.lastSeen}</div>
-								</div>
-							</div>
-						{:else if dataShow.mode === taskMode.MODE_MIX}
-							<div class="flex h-full w-full justify-center">
-								<div class="mt-2 h-full w-5/6">
-									
-									<div class="mb-2 grid grid-cols-6">
-										<div class="col-span-2 text-left text-xs font-bold">
-											{dataShow.mixAnama}
-										</div>
-										<div class="col-span-3 h-4 rounded-full bg-gray-200">
-											<div
-												class="h-4 rounded-full bg-blue-600"
-												style="width: {$flowAPersen}%;"
-											></div>
-										</div>
-										<div class="pl-2 text-left text-xs font-bold">
-											{dataShow.targetMixA * 100}mL
-										</div>
-									</div>
-
-									
-									<div class="mb-2 grid grid-cols-6">
-										<div class="col-span-2 text-left text-xs font-bold">
-											{dataShow.mixBnama}
-										</div>
-										<div class="col-span-3 h-4 rounded-full bg-gray-200">
-											<div
-												class="h-4 rounded-full bg-blue-600"
-												style="width: {$flowBPersen}%;"
-											></div>
-										</div>
-										<div class="pl-2 text-left text-xs font-bold">
-											{dataShow.targetMixB * 100}mL
-										</div>
-									</div>
-
-									
-									<div class="grid grid-cols-6">
-										<div class="col-span-2 text-left text-xs font-bold">
-											{dataShow.mixCnama}
-										</div>
-										<div class="col-span-3 h-4 rounded-full bg-gray-200">
-											<div
-												class="h-4 rounded-full bg-blue-600"
-												style="width: {$flowCPersen}%;"
-											></div>
-										</div>
-										<div class="pl-2 text-left text-xs font-bold">
-											{dataShow.targetMixC * 100}mL
-										</div>
-									</div>
-									<div class="text-xs">
-										Aduk({dataShow.mixingTarget}detik)
-									</div>
-								</div>
-							</div>
-						{:else}
-							<div class="mt-4 text-center font-mono text-3xl font-bold">
-								{dataShow.sensorVal}{#if dataShow.mode === taskMode.MODE_HUMIDITY}%
-								{:else if dataShow.mode === taskMode.MODE_TEMPERATURE}&deg;C
-								{:else if dataShow.mode === taskMode.MODE_LENGAS}%
-								{/if}
-							</div>
-
-							<div class="mt-4 h-4 text-center font-mono text-xs">
-								{#if dataShow.mode === taskMode.MODE_HUMIDITY}
-									ON:{dataShow.batasBawah} ~ OFF:{dataShow.batasAtas}
-								{:else if dataShow.mode === taskMode.MODE_TEMPERATURE}
-									OFF:{dataShow.batasBawah} ~ ON:{dataShow.batasAtas}
-								{:else if dataShow.mode === taskMode.MODE_LENGAS}
-									ON:{dataShow.batasBawah} ~ OFF:{dataShow.batasAtas}
-								{/if}
-							</div>
-							<div style="font-size: xx-small; text-align:center;">lastSeen: {dataShow.lastSeen}</div>
-						{/if}
-					</div>
-				</div>
-			{/each}
-		</div>
-		{:else if $displayMode === display.MODE_AKTUATOR}
-		<div></div>
-		{:else if $displayMode === display.MODE_SENSOR}
-		<div></div>
-			
-		{/if}
-	-->
 		<div class="no-select grid w-full grid-cols-2 gap-8">
 			{#each $myTask as dataShow, idx}
 				<div class="h-42 w-full rounded-lg bg-white p-0 shadow">
@@ -741,7 +664,7 @@
 		<p class="mt-2 text-xs">agro kontrol by karjoAgro</p>
 	</footer>
 {/if}
-<Modal class="w-8/10" title={setupTitle} bind:open={defaultModal}>
+<Modal class="h-full w-full" title={setupTitle} bind:open={defaultModal}>
 	{#if setupMode === 0}
 		<div class="mx-auto grid max-w-sm grid-cols-2 gap-2">
 			<div class="col-span-2">
@@ -913,125 +836,239 @@
 				</select>
 			</div>
 
-			<div class="grid grid-cols-2 justify-items-center">
+			<div class="mt-4 grid grid-cols-2 justify-items-center">
 				{#if $myTask[setupIndex].mode == taskMode.MODE_TEMPERATURE}
-					<div>OFF({batasBawahValue})</div>
-					<div>ON({batasAtasValue})</div>
+					<div>OFF({rangeValue[0]})</div>
+					<div>ON({rangeValue[1]})</div>
 				{:else}
-					<div>ON({batasBawahValue})</div>
-					<div>OFF({batasAtasValue})</div>
+					<div>ON({rangeValue[0]})</div>
+					<div>OFF({rangeValue[1]})</div>
 				{/if}
-				<input
-					bind:value={batasBawahValue}
-					min={minSpinner}
-					max={batasAtasValue - 1}
-					step="1"
-					type="range"
-					class="mb-6 h-2 w-5/6 cursor-pointer appearance-none rounded-lg bg-gray-200 dark:bg-gray-700"
-					on:change={batasBawahChange}
-				/>
-
-				<input
-					bind:value={batasAtasValue}
-					min={batasBawahValue + 1}
-					max={maxSpinner}
-					step="1"
-					type="range"
-					class="mb-6 h-2 w-5/6 cursor-pointer appearance-none rounded-lg bg-gray-200 dark:bg-gray-700"
-					on:change={batasAtasChange}
-				/>
 			</div>
+
+			<RangeSlider
+				range
+				pips
+				min={minSpinner}
+				max={maxSpinner}
+				on:change={() => rangeChange()}
+				bind:values={rangeValue}
+			/>
 		{/if}
+		<div class="grid h-10 w-3/4 grid-cols-3 gap-4 pl-4">
+			<Button color="red" on:click={() => (defaultModal = false)}>Keluar</Button>
+			<Button color="green" on:click={() => simpanTask()}>Simpan</Button>
+		</div>
 	{:else}
 		<Tabs tabStyle="underline">
-			<TabItem open title="Setup">
-				<!--for setupkontroller network-->
-				<div class="mx-auto grid max-w-sm grid-cols-2 gap-4">
-					{#if $networkMode === networkSelect.MODE_BT}
-						<div class="col-span-2">
-							<input
-								id="checked-checkbox"
-								type="checkbox"
-								on:change={() => networkChange()}
-								bind:checked={onlineCheck}
-								class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600"
-							/>
-							<label
-								for="checked-checkbox"
-								class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300">Online Mode</label
-							>
-						</div>
-
-						<div class="col-span-2">Wifi Setup</div>
-						<input
-							type="text"
-							id="ssid"
-							bind:value={$networkSetup.ssid}
-							class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-							placeholder="SSID"
-							required
-						/>
-
-						<input
-							type="password"
-							id="password"
-							bind:value={$networkSetup.password}
-							class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-							placeholder="Password"
-							required
-						/>
-					{:else}
-						<input
-							type="text"
-							bind:value={inputID}
-							class="col-span-2 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-							placeholder={$kontrolID}
-							required
-						/>
-					{/if}
-					<!--
-
-			<div class="col-span-2">Pilih Server</div>
-
-			<select
-						bind:value={serverSelect}
-						on:change={() => serverSelectChange()}
-						
-						class="col-span-2 block w-full p-2 mb-1 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-					>
-						{#each serverList as server, idx}
-							<option value={idx}>{server}</option>
+			{#if $isStarted}
+				<TabItem open title="Aktuator">
+					<div class="h-60 w-full overflow-auto">
+						{#each aktuatorList as aktuator, idx}
+							<div class="mb-4 grid h-10 w-full grid-cols-3 rounded border">
+								<button class="col-span-2"
+									>Aktuator{idx + 1} ({aktuator.nodeId} - {aktuator.nomerAktuator - 5})</button
+								>
+								<button
+									>{#if aktuator.val === 1}
+										ON
+									{:else}
+										OFF
+									{/if}</button
+								>
+							</div>
 						{/each}
-					</select>
-
-		-->
-				</div>
-			</TabItem>
-			<TabItem title="Aktuator">
-				<div class="w-full">
-					{#each aktuatorList as aktuator, idx}
-						<div class="mb-4 grid h-10 w-full grid-cols-2 border ">
-							<button>Aktuator{idx+1} ({aktuator.nodeId} - {aktuator.nomerAktuator - 5})</button>
-							<button>{#if aktuator.val === 1}
-								ON
-								{:else}
-								OFF
-								
-							{/if}</button>
+					</div>
+				</TabItem>
+				<TabItem title="Sensor">
+					<div class="h-60 w-full overflow-auto">
+						{#each sensorTemperatureList as sensor, idx}
+							<div class="mb-4 grid h-10 w-full grid-cols-3 rounded border">
+								<button class="col-span-2">SensorTemperature{idx + 1} ({sensor.nodeId})</button>
+								<button>{sensor.val}</button>
+							</div>
+						{/each}
+						<hr class="mb-4" />
+						{#each sensorHumidityList as sensor, idx}
+							<div class="mb-4 grid h-10 w-full grid-cols-3 rounded border">
+								<button class="col-span-2">SensorHumidity{idx + 1} ({sensor.nodeId})</button>
+								<button>{sensor.val} %</button>
+							</div>
+						{/each}
+						<hr class="mb-4" />
+						{#each sensorLengasList as sensor, idx}
+							<div class="mb-4 grid h-10 w-full grid-cols-3 rounded border">
+								<button class="col-span-2">SensorLengas{idx + 1} ({sensor.nodeId})</button>
+								<button>{sensor.val} %</button>
+							</div>
+						{/each}
+						<hr class="mb-4" />
+						{#each sensorIntermittentList as sensor, idx}
+							<div class="mb-4 grid h-10 w-full grid-cols-3 rounded border">
+								<button class="col-span-2">SensorIntermittent{idx + 1} ({sensor.nodeId})</button>
+								<button>{sensor.val}</button>
+							</div>
+						{/each}
+						<hr class="mb-4" />
+					</div>
+				</TabItem>
+				<TabItem title="Setup">
+					<div class="h-60 w-full overflow-auto">
+						<!--for setupkontroller network-->
+						<div class="mx-auto grid max-w-sm grid-cols-2 gap-4">
+							{#if $networkMode === networkSelect.MODE_BT}
+								<div class="col-span-2">
+									<input
+										id="checked-checkbox"
+										type="checkbox"
+										on:change={() => networkChange()}
+										bind:checked={onlineCheck}
+										class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600"
+									/>
+									<label
+										for="checked-checkbox"
+										class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+										>Online Mode</label
+									>
+								</div>
+	
+								<div class="col-span-2">Wifi Setup</div>
+								<input
+									type="text"
+									id="ssid"
+									bind:value={$networkSetup.ssid}
+									class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+									placeholder="SSID"
+									required
+								/>
+	
+								<input
+									type="password"
+									id="password"
+									bind:value={$networkSetup.password}
+									class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+									placeholder="Password"
+									required
+								/>
+							{:else}
+								<input
+									type="text"
+									bind:value={inputID}
+									class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+									placeholder={$kontrolID}
+									required
+								/>
+								<Button color="green" on:click={() => simpanTask()}>Simpan</Button>
+								<div class="col-span-2"></div>
+								{#if $isStarted}
+									<Toggle  bind:checked={demoVal} on:change={() => demoChange()}
+										>Demo
+										{#if $demoWait}
+											<Spinner class="me-3" bg="white" size="5" color="yellow" />
+										{/if}
+									</Toggle>
+								{/if}
+							{/if}
+							<!--
+	
+				<div class="col-span-2">Pilih Server</div>
+	
+				<select
+							bind:value={serverSelect}
+							on:change={() => serverSelectChange()}
+							
+							class="col-span-2 block w-full p-2 mb-1 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+						>
+							{#each serverList as server, idx}
+								<option value={idx}>{server}</option>
+							{/each}
+						</select>
+	
+			-->
 						</div>
-					{/each}
-				</div>
-			</TabItem>
-			<TabItem title="Sensor">
-				<div class="w-full h-full">Sensor</div>
-			</TabItem>
+					</div>
+				</TabItem>
+				{:else}
+				<TabItem open title="Setup">
+					<div class="h-60 w-full overflow-auto">
+						<!--for setupkontroller network-->
+						<div class="mx-auto grid max-w-sm grid-cols-2 gap-4">
+							{#if $networkMode === networkSelect.MODE_BT}
+								<div class="col-span-2">
+									<input
+										id="checked-checkbox"
+										type="checkbox"
+										on:change={() => networkChange()}
+										bind:checked={onlineCheck}
+										class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600"
+									/>
+									<label
+										for="checked-checkbox"
+										class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+										>Online Mode</label
+									>
+								</div>
+	
+								<div class="col-span-2">Wifi Setup</div>
+								<input
+									type="text"
+									id="ssid"
+									bind:value={$networkSetup.ssid}
+									class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+									placeholder="SSID"
+									required
+								/>
+	
+								<input
+									type="password"
+									id="password"
+									bind:value={$networkSetup.password}
+									class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+									placeholder="Password"
+									required
+								/>
+							{:else}
+								<input
+									type="text"
+									bind:value={inputID}
+									class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+									placeholder={$kontrolID}
+									required
+								/>
+								<Button color="green" on:click={() => simpanTask()}>Simpan</Button>
+								<div class="col-span-2"></div>
+								{#if $isStarted}
+									<Toggle bind:checked={demoVal} on:change={() => demoChange()}
+										>Demo
+										{#if $demoWait}
+											<Spinner class="ml-2 me-3" bg="white" size="5" color="yellow" />
+										{/if}
+									</Toggle>
+								{/if}
+							{/if}
+							<!--
+	
+				<div class="col-span-2">Pilih Server</div>
+	
+				<select
+							bind:value={serverSelect}
+							on:change={() => serverSelectChange()}
+							
+							class="col-span-2 block w-full p-2 mb-1 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+						>
+							{#each serverList as server, idx}
+								<option value={idx}>{server}</option>
+							{/each}
+						</select>
+	
+			-->
+						</div>
+					</div>
+				</TabItem>
+			{/if}
+			
 		</Tabs>
 	{/if}
-
-	<svelte:fragment slot="footer">
-		<Button color="red" on:click={() => (defaultModal = false)}>Keluar</Button>
-		<Button color="green" on:click={() => simpanTask()}>Simpan</Button>
-	</svelte:fragment>
 </Modal>
 
 <style lang="postcss">
@@ -1074,5 +1111,9 @@
 		footer {
 			padding: 12px 0;
 		}
+	}
+	.rangePips :is(.in-range, .selected) {
+		background: #f00;
+		width: 2px;
 	}
 </style>

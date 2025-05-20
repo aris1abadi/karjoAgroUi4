@@ -77,6 +77,8 @@ export let mqttIsConnected = writable(false);
 export let networkMode = writable(networkSelect.MODE_OFF);
 //export let networkMode = writable(networkSelect.MODE_LOCAL);
 export let displayMode = writable(display.MODE_KONTROL);
+export let isDemo = writable(false);
+export let demoWait = writable(false);
 
 export const kontrolID = persisted('kontrolID', 'KA-E8C9')
 export let networkSetup = writable({ mode: false, ssid: "", password: "", mqttBroker: "", mqttPort: 1883 })
@@ -85,63 +87,63 @@ export let spinnerShow = writable([false, false, false, false]);
 
 export let isStarted = writable(false);
 export let aktuatorList = [{
-  nodeId:"0001",
-  nomerAktuator:nodeType.NODE_RELAY1,
-  val:0,
-  isActive:false
-},{
-  nodeId:"0001",
-  nomerAktuator:nodeType.NODE_RELAY2,
-  val:0,
-  isActive:false
+  nodeId: "0001",
+  nomerAktuator: nodeType.NODE_RELAY1,
+  val: 0,
+  isActive: false
+}, {
+  nodeId: "0001",
+  nomerAktuator: nodeType.NODE_RELAY2,
+  val: 0,
+  isActive: false
 }
 ]
 
 export let sensorLengasList = [{
-  nodeId:"----",
-  sensorType:nodeType.NODE_SOIL_MOISTURE,  
-  val:0,
-  isActive:false
-},{
-  nodeId:"----",
-  sensorType:nodeType.NODE_SOIL_MOISTURE,  
-  val:0,
-  isActive:false
+  nodeId: "----",
+  sensorType: nodeType.NODE_SOIL_MOISTURE,
+  val: 0,
+  isActive: false
+}, {
+  nodeId: "----",
+  sensorType: nodeType.NODE_SOIL_MOISTURE,
+  val: 0,
+  isActive: false
 }];
 
 export let sensorTemperatureList = [{
-  nodeId:"0002",
-  sensorType:nodeType.NODE_TEMPERATURE,  
-  val:0,
-  isActive:false
-},{
-  nodeId:"0002",
-  sensorType:nodeType.NODE_TEMPERATURE,  
-  val:0,
-  isActive:false
+  nodeId: "0002",
+  sensorType: nodeType.NODE_TEMPERATURE,
+  val: 0,
+  isActive: false
+}, {
+  nodeId: "0002",
+  sensorType: nodeType.NODE_TEMPERATURE,
+  val: 0,
+  isActive: false
 }];
 export let sensorHumidityList = [{
-  nodeId:"0002",
-  sensorType:nodeType.NODE_HUMIDITY,  
-  val:0,
-  isActive:false
-},{
-  nodeId:"0002",
-  sensorType:nodeType.NODE_HUMIDITY,  
-  val:0,
-  isActive:false
+  nodeId: "0002",
+  sensorType: nodeType.NODE_HUMIDITY,
+  val: 0,
+  isActive: false
+}, {
+  nodeId: "0002",
+  sensorType: nodeType.NODE_HUMIDITY,
+  val: 0,
+  isActive: false
 }];
 
 export let sensorIntermittentList = [{
-  nodeId:"----",
-  sensorType:nodeType.NODE_DISTANCE,  
-  val:0,
-  isActive:false
-},{
-  nodeId:"----",
-  sensorType:nodeType.NODE_DISTANCE,  
-  val:0,
-  isActive:false
+  nodeId: "----",
+  sensorType: nodeType.NODE_DISTANCE,
+  val: 0,
+  isActive: false
+}, {
+  nodeId: "----",
+  sensorType: nodeType.NODE_DISTANCE,
+  val: 0,
+  isActive: false
 }];
 
 export let waterLevel = 0;
@@ -467,6 +469,7 @@ function unixToLocalString(timestamp) {
   const dateUTC = new Date(timestamp * 1000);
 
   // Format tanggal dan waktu saja
+
   return dateUTC.toISOString()
     .replace('T', ' ')
     .replace(/\..+/, '');
@@ -497,11 +500,12 @@ function cekMqttMsg(topic, msg_payload) {
         if (lastMsg != msg_payload) {
           lastMsg = msg_payload;
           const newArray = JSON.parse(msg_payload).task;
-          for(let i = 0;i<newArray.length;i++){
-            if(newArray[i].lastSeen < 1000){
+          for (let i = 0; i < newArray.length; i++) {
+            if (newArray[i].lastSeen < 1000) {
               newArray[i].lastSeen = '-'
-            }else{
-            newArray[i].lastSeen = unixToLocalString(newArray[i].lastSeen);
+            } else {
+              newArray[i].lastSeen = unixToLocalString(newArray[i].lastSeen);
+              //newArray[i].lastSeen = newArray[i].lastSeen.toLocaleString('id-ID')
             }
           }
           myTask.set(newArray); // Update store sekali setelah loop selesai
@@ -515,52 +519,48 @@ function cekMqttMsg(topic, msg_payload) {
         if (lastMsg != msg_payload) {
           lastMsg = msg_payload;
           const newAktuator = JSON.parse(msg_payload).aktuator;
-          if(newAktuator.length > 0){
-          aktuatorList = newAktuator
-         
-        }
+          if (newAktuator.length > 0) {
+            aktuatorList = newAktuator
+
+          }
           //console.log(aktuatorList)
         }
       } else if (msg_cmd === "InfoAllTemperatureSensor") {
         if (lastMsg != msg_payload) {
           lastMsg = msg_payload;
           const newTemperatureSensor = JSON.parse(msg_payload).TemperatureSensor;
-          if(newTemperatureSensor.length > 0){
-          sensorTemperatureList = [];
-
-          for (let i = 0; i < newTemperatureSensor.length; i++) {
-            sensorTemperatureList.push('SensorTemperature' + (i + 1) + '(' + newTemperatureSensor[i].nodeId + ')')
+          if (newTemperatureSensor.length > 0) {
+            sensorTemperatureList = newTemperatureSensor
           }
         }
-          //console.log(sensorTemperatureList)
-        }
+
       } else if (msg_cmd === "InfoAllHumiditySensor") {
         if (lastMsg != msg_payload) {
           lastMsg = msg_payload;
           const newHumiditySensor = JSON.parse(msg_payload).HumiditySensor;
-          if(newHumiditySensor.length > 0){
-          sensorHumidityList = newHumiditySensor;
+          if (newHumiditySensor.length > 0) {
+            sensorHumidityList = newHumiditySensor;
 
-        }
+          }
           //console.log(sensorHumidityList)
         }
       } else if (msg_cmd === "InfoAllHumiditySensor") {
         if (lastMsg != msg_payload) {
           lastMsg = msg_payload;
           const newSoilSensor = JSON.parse(msg_payload).SoilSensor;
-          if(newSoilSensor.length > 0){
-          sensorLengasList = newSoilSensor;
-        }
+          if (newSoilSensor.length > 0) {
+            sensorLengasList = newSoilSensor;
+          }
           //console.log(sensorLengasList)
         }
-      }else if (msg_cmd === "InfoAllDistanceSensor") {
+      } else if (msg_cmd === "InfoAllDistanceSensor") {
         if (lastMsg != msg_payload) {
           lastMsg = msg_payload;
           const newDistanceSensor = JSON.parse(msg_payload).DistanceSensor;
-          if(newDistanceSensor.length > 0){
-          sensorIntermittentList = newDistanceSensor;
+          if (newDistanceSensor.length > 0) {
+            sensorIntermittentList = newDistanceSensor;
 
-        }
+          }
           //console.log(sensorIntermittentList)
         }
       } else if (msg_cmd === "getNetwork") {
@@ -576,6 +576,17 @@ function cekMqttMsg(topic, msg_payload) {
         networkSetup.mqttBroker = net.mqttBroker
         networkSetup.mqttPort = net.mqttPort
         //console.log(JSON.stringify(networkSetup))
+      }else if(msg_cmd === 'demoMode'){
+        if (lastMsg != msg_payload) {
+          lastMsg = msg_payload;
+          demoWait.set(false);
+          if(parseInt(msg_payload) === 1){
+            isDemo.set(true)
+          }else{
+            isDemo.set(false)
+          }
+
+        }
       }
     } else if (typeTask === msgType.TASK) {
       if (msg_cmd === "infoTask") {
@@ -586,7 +597,8 @@ function cekMqttMsg(topic, msg_payload) {
         //console.log("mqtt msg: " + JSON.stringify(jsonData))  
         //console.log('LastSeen: ' + jsonData.lastSeen);
         //debugESP32Time(jsonData.lastSeen)
-        const lastSeenNow = unixToLocalString(jsonData.lastSeen);
+        //const lastSeenNow = unixToLocalString(jsonData.lastSeen);
+        const lastSeenNow = jsonData.lastSeen.toLocaleString('id-ID')
 
         myTask.update(task => {
           // Ubah nilai `a` pada elemen pertama
@@ -650,6 +662,12 @@ function cekMqttMsg(topic, msg_payload) {
       } else if (msg_cmd === "mixingTarget") {
         myTask.update(task => {
           task[numberTask] = { ...task[numberTask], mixingTarget: parseInt(msg_payload) };
+          return task;
+        });
+      } else if (msg_cmd === "sensorVal") {
+        const sekarang = new Date();
+        myTask.update(task => {
+          task[numberTask] = { ...task[numberTask], sensorVal: parseInt(msg_payload), lastSeen: sekarang.toLocaleString('id-ID') };
           return task;
         });
       }
