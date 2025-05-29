@@ -3,6 +3,7 @@ import { persisted } from 'svelte-persisted-store'
 import mqtt from "mqtt";
 import { dev } from "$app/environment";
 import { json } from "@sveltejs/kit";
+import { transpileModule } from "typescript";
 
 
 export const networkSelect = {
@@ -34,6 +35,20 @@ export const display = {
   MODE_AKTUATOR: 1,
   MODE_SENSOR: 2,
 }
+
+export const dispMode =
+{
+  MODE_BAR1: 0,
+  MODE_BAR2: 1,
+  MODE_ANGKA: 2,
+
+};
+
+export const dispType =
+{
+  TYPE_INTERMITTENT: 0,
+  TYPE_LENGAS: 1
+};
 
 
 export const msgType = {
@@ -79,6 +94,8 @@ export let networkMode = writable(networkSelect.MODE_OFF);
 export let displayMode = writable(display.MODE_KONTROL);
 export let isDemo = writable(false);
 export let demoWait = writable(false);
+export let connectionStatus = writable(false);
+let connectionStatusCount = 0;
 
 export const kontrolID = persisted('kontrolID', 'KA-E8C9')
 export let networkSetup = writable({ mode: false, ssid: "", password: "", mqttBroker: "", mqttPort: 1883 })
@@ -148,70 +165,6 @@ export let sensorIntermittentList = [{
 
 export let waterLevel = 0;
 export let myTask = writable([{
-  nama: 'Temperature',
-  aktuator1: 1,
-  aktuator2: 2,
-  aktuator1Val: 0,
-  aktuator2Val: 0,
-  aktuatorMixA: 3,
-  aktuatorMixB: 4,
-  aktuatorMixC: 5,
-  aktuatorMixOut: 6,
-  aktuatorAduk: 7,
-  sensorUse: 1,
-  sensorVal: 0,
-  flowSensorA: 1,
-  flowSensorB: 2,
-  flowSensorC: 3,
-  flowMixOut: 4,
-  targetMixA: 0,
-  targetMixB: 0,
-  targetMixC: 0,
-  mixingTarget: 0,
-  mode: taskMode.MODE_TEMPERATURE,//task mode
-  batasBawah: 30,
-  batasAtas: 35,
-  timer1: '0,0,0',//format HH,MM,durasi
-  timer2: '0,0,0',//format HH:MM,durasi
-  timer3: '0,0,0',//format HH:MM,durasi
-  mixAnama: 'Pupuk1',
-  mixBnama: 'Pupuk2',
-  mixCnama: 'Air',
-  lastSeen: "",
-  enable: 0,
-}, {
-  nama: 'Humidity',
-  aktuator1: 1,
-  aktuator2: 2,
-  aktuator1Val: 0,
-  aktuator2Val: 0,
-  aktuatorMixA: 3,
-  aktuatorMixB: 4,
-  aktuatorMixC: 5,
-  aktuatorMixOut: 6,
-  aktuatorAduk: 7,
-  sensorUse: 1,
-  sensorVal: 0,
-  flowSensorA: 1,
-  flowSensorB: 2,
-  flowSensorC: 3,
-  flowMixOut: 4,
-  targetMixA: 0,
-  targetMixB: 0,
-  targetMixC: 0,
-  mixingTarget: 0,
-  mode: taskMode.MODE_HUMIDITY,//task mode
-  batasBawah: 30,
-  batasAtas: 35,
-  timer1: '0,0,0',//format HH,MM,durasi
-  timer2: '0,0,0',//format HH:MM,durasi
-  timer3: '0,0,0',//format HH:MM,durasi
-  mixAnama: 'Pupuk1',
-  mixBnama: 'Pupuk2',
-  mixCnama: 'Air',
-  lastSeen: "",
-  enable: 0,
-}, {
   nama: 'Lengas',
   aktuator1: 1,
   aktuator2: 2,
@@ -233,8 +186,8 @@ export let myTask = writable([{
   targetMixC: 0,
   mixingTarget: 0,
   mode: taskMode.MODE_LENGAS,//task mode
-  batasBawah: 30,
-  batasAtas: 35,
+  batasBawah: -1,
+  batasAtas: 5,
   timer1: '0,0,0',//format HH,MM,durasi
   timer2: '0,0,0',//format HH:MM,durasi
   timer3: '0,0,0',//format HH:MM,durasi
@@ -242,6 +195,8 @@ export let myTask = writable([{
   mixBnama: 'Pupuk2',
   mixCnama: 'Air',
   lastSeen: "",
+  useDisplay: true,
+  displayMode: dispMode.MODE_BAR2,
   enable: 0,
 }, {
   nama: 'Intermitten',
@@ -274,6 +229,8 @@ export let myTask = writable([{
   mixBnama: 'Pupuk2',
   mixCnama: 'Air',
   lastSeen: "",
+  useDisplay: false,
+  displayMode: dispMode.MODE_BAR2,
   enable: 0,
 }]);
 
@@ -293,6 +250,15 @@ let myTaskNow = myTask;
 let mqttConnected = false
 let client = null;
 
+function cekConnectionTimeout() {
+  if (connectionStatus) {
+    if (++connectionStatusCount > 3) {
+      connectionStatus.set(false);
+      connectionStatusCount = 0;
+    }
+  }
+
+}
 
 
 const options = {
@@ -342,6 +308,12 @@ export function initMqtt() {
     if (bleConnected) {
       bleConnectionToggle();
     }
+    setInterval(() => {  if (connectionStatus) {
+      if (++connectionStatusCount > 3) {
+        connectionStatus.set(false);
+        connectionStatusCount = 0;
+      }
+    } }, 30000);
 
     //cekClientId();
 
@@ -370,7 +342,7 @@ export function initMqtt() {
 
 }
 
-function mqttDisconnect() {
+export function mqttDisconnect() {
   if (mqttConnected && client) {
     client.end();
     mqttConnected = false;
@@ -491,188 +463,195 @@ function cekMqttMsg(topic, msg_payload) {
   const topicMqtt = topic ? topic.split("/") : [];
   if (topicMqtt.length > 0) {
     const serverId = topicMqtt[1];
-    const typeTask = parseInt(topicMqtt[2]);
-    const numberTask = topicMqtt[3];
-    const msg_cmd = topicMqtt[4];
+    
+      const typeTask = parseInt(topicMqtt[2]);
+      const numberTask = topicMqtt[3];
+      const msg_cmd = topicMqtt[4];
 
-    if (typeTask === msgType.KONTROL) {
-      if (msg_cmd === "infoAllTask") {
-        if (lastMsg != msg_payload) {
-          lastMsg = msg_payload;
-          const newArray = JSON.parse(msg_payload).task;
-          for (let i = 0; i < newArray.length; i++) {
-            if (newArray[i].lastSeen < 1000) {
-              newArray[i].lastSeen = '-'
-            } else {
-              newArray[i].lastSeen = unixToLocalString(newArray[i].lastSeen);
-              //newArray[i].lastSeen = newArray[i].lastSeen.toLocaleString('id-ID')
+      //update status connectionn
+      connectionStatus.set(true);
+      connectionStatusCount = 0;
+      //console.log("connected " + connectionStatus)
+
+      if (typeTask === msgType.KONTROL) {
+        if (msg_cmd === "infoAllTask") {
+          if (lastMsg != msg_payload) {
+            lastMsg = msg_payload;
+            const newArray = JSON.parse(msg_payload).task;
+            for (let i = 0; i < newArray.length; i++) {
+              if (newArray[i].lastSeen < 1000) {
+                newArray[i].lastSeen = '-'
+              } else {
+                newArray[i].lastSeen = unixToLocalString(newArray[i].lastSeen);
+                //newArray[i].lastSeen = newArray[i].lastSeen.toLocaleString('id-ID')
+              }
+            }
+            myTask.set(newArray); // Update store sekali setelah loop selesai
+            //console.log(newArray)
+
+          }
+        } else if (msg_cmd === "infoAllNode") {
+
+
+        } else if (msg_cmd === "InfoAllAktuator") {
+          if (lastMsg != msg_payload) {
+            lastMsg = msg_payload;
+            const newAktuator = JSON.parse(msg_payload).aktuator;
+            if (newAktuator.length > 0) {
+              aktuatorList = newAktuator
+
+            }
+            //console.log(aktuatorList)
+          }
+        } else if (msg_cmd === "InfoAllTemperatureSensor") {
+          if (lastMsg != msg_payload) {
+            lastMsg = msg_payload;
+            const newTemperatureSensor = JSON.parse(msg_payload).TemperatureSensor;
+            if (newTemperatureSensor.length > 0) {
+              sensorTemperatureList = newTemperatureSensor
             }
           }
-          myTask.set(newArray); // Update store sekali setelah loop selesai
-          //console.log(newArray)
 
-        }
-      } else if (msg_cmd === "infoAllNode") {
+        } else if (msg_cmd === "InfoAllHumiditySensor") {
+          if (lastMsg != msg_payload) {
+            lastMsg = msg_payload;
+            const newHumiditySensor = JSON.parse(msg_payload).HumiditySensor;
+            if (newHumiditySensor.length > 0) {
+              sensorHumidityList = newHumiditySensor;
 
-
-      } else if (msg_cmd === "InfoAllAktuator") {
-        if (lastMsg != msg_payload) {
-          lastMsg = msg_payload;
-          const newAktuator = JSON.parse(msg_payload).aktuator;
-          if (newAktuator.length > 0) {
-            aktuatorList = newAktuator
-
+            }
+            //console.log(sensorHumidityList)
           }
-          //console.log(aktuatorList)
-        }
-      } else if (msg_cmd === "InfoAllTemperatureSensor") {
-        if (lastMsg != msg_payload) {
-          lastMsg = msg_payload;
-          const newTemperatureSensor = JSON.parse(msg_payload).TemperatureSensor;
-          if (newTemperatureSensor.length > 0) {
-            sensorTemperatureList = newTemperatureSensor
+        } else if (msg_cmd === "InfoAllHumiditySensor") {
+          if (lastMsg != msg_payload) {
+            lastMsg = msg_payload;
+            const newSoilSensor = JSON.parse(msg_payload).SoilSensor;
+            if (newSoilSensor.length > 0) {
+              sensorLengasList = newSoilSensor;
+            }
+            //console.log(sensorLengasList)
           }
-        }
+        } else if (msg_cmd === "InfoAllDistanceSensor") {
+          if (lastMsg != msg_payload) {
+            lastMsg = msg_payload;
+            const newDistanceSensor = JSON.parse(msg_payload).DistanceSensor;
+            if (newDistanceSensor.length > 0) {
+              sensorIntermittentList = newDistanceSensor;
 
-      } else if (msg_cmd === "InfoAllHumiditySensor") {
-        if (lastMsg != msg_payload) {
-          lastMsg = msg_payload;
-          const newHumiditySensor = JSON.parse(msg_payload).HumiditySensor;
-          if (newHumiditySensor.length > 0) {
-            sensorHumidityList = newHumiditySensor;
-
+            }
+            //console.log(sensorIntermittentList)
           }
-          //console.log(sensorHumidityList)
-        }
-      } else if (msg_cmd === "InfoAllHumiditySensor") {
-        if (lastMsg != msg_payload) {
-          lastMsg = msg_payload;
-          const newSoilSensor = JSON.parse(msg_payload).SoilSensor;
-          if (newSoilSensor.length > 0) {
-            sensorLengasList = newSoilSensor;
-          }
-          //console.log(sensorLengasList)
-        }
-      } else if (msg_cmd === "InfoAllDistanceSensor") {
-        if (lastMsg != msg_payload) {
-          lastMsg = msg_payload;
-          const newDistanceSensor = JSON.parse(msg_payload).DistanceSensor;
-          if (newDistanceSensor.length > 0) {
-            sensorIntermittentList = newDistanceSensor;
-
-          }
-          //console.log(sensorIntermittentList)
-        }
-      } else if (msg_cmd === "getNetwork") {
-        const net = JSON.parse(msg_payload)
-        if (net.mode === 0) {
-          networkSetup.mode = false
-        } else {
-          networkSetup.mode = true
-        }
-
-        networkSetup.ssid = net.ssid
-        networkSetup.password = net.password
-        networkSetup.mqttBroker = net.mqttBroker
-        networkSetup.mqttPort = net.mqttPort
-        //console.log(JSON.stringify(networkSetup))
-      }else if(msg_cmd === 'demoMode'){
-        if (lastMsg != msg_payload) {
-          lastMsg = msg_payload;
-          demoWait.set(false);
-          if(parseInt(msg_payload) === 1){
-            isDemo.set(true)
-          }else{
-            isDemo.set(false)
+        } else if (msg_cmd === "getNetwork") {
+          const net = JSON.parse(msg_payload)
+          if (net.mode === 0) {
+            networkSetup.mode = false
+          } else {
+            networkSetup.mode = true
           }
 
+          networkSetup.ssid = net.ssid
+          networkSetup.password = net.password
+          networkSetup.mqttBroker = net.mqttBroker
+          networkSetup.mqttPort = net.mqttPort
+          //console.log(JSON.stringify(networkSetup))
+        } else if (msg_cmd === 'demoMode') {
+          if (lastMsg != msg_payload) {
+            lastMsg = msg_payload;
+            demoWait.set(false);
+            if (parseInt(msg_payload) === 1) {
+              isDemo.set(true)
+            } else {
+              isDemo.set(false)
+            }
+
+          }
         }
+      } else if (typeTask === msgType.TASK) {
+        if (msg_cmd === "infoTask") {
+          //console.log("mqtt msg: " + msg_payload)
+          //msg  {"enable":0,"aktuator1":1,"aktuator2":2,"nodeSensor":1,"batasBawah":31,"batasAtas":81,"mode":2,"nama":"Lengas","sensorVal":80}
+
+          const jsonData = JSON.parse(msg_payload); // Parse JSON 
+          //console.log("mqtt msg: " + JSON.stringify(jsonData))  
+          //console.log('LastSeen: ' + jsonData.lastSeen);
+          //debugESP32Time(jsonData.lastSeen)
+          //const lastSeenNow = unixToLocalString(jsonData.lastSeen);
+          const lastSeenNow = jsonData.lastSeen.toLocaleString('id-ID')
+
+          myTask.update(task => {
+            // Ubah nilai `a` pada elemen pertama
+            task[numberTask] = { ...task[numberTask], enable: jsonData.enable, aktuator1: jsonData.aktuator1, aktuator2: jsonData.aktuator2, sensorUse: jsonData.sensorUse, sensorVal: jsonData.sensorVal, batasBawah: jsonData.batasBawah, batasAtas: jsonData.batasAtas, mode: jsonData.mode, nama: jsonData.nama, lastSeen: lastSeenNow }; // Ganti nilai a
+            return task; // Kembalikan array yang telah dimodifikasi
+          });
+
+
+        } else if (msg_cmd === "enable") {
+          myTask.update(task => {
+            task[numberTask] = { ...task[numberTask], enable: parseInt(msg_payload) };
+            return task;
+          });
+          spinnerShow.update(spin => {
+            spin[numberTask] = false;
+            return spin;
+          });
+
+        } else if (msg_cmd === "aktuator1") {
+          myTask.update(task => {
+            task[numberTask] = { ...task[numberTask], aktuator1: parseInt(msg_payload) };
+            return task;
+          });
+        } else if (msg_cmd === "aktuator2") {
+          myTask.update(task => {
+            task[numberTask] = { ...task[numberTask], aktuator2: parseInt(msg_payload) };
+            return task;
+          });
+        } else if (msg_cmd === "jadwal") {
+          // myTaskNow[numberTask].aktuatorUse2 = parseInt(msg_payload);
+        } else if (msg_cmd === "sensorUse") {
+          myTask.update(task => {
+            task[numberTask] = { ...task[numberTask], nodeSensor: parseInt(msg_payload) };
+            return task;
+          });
+        } else if (msg_cmd === "batasBawah") {
+          myTask.update(task => {
+            task[numberTask] = { ...task[numberTask], batasBawah: parseInt(msg_payload) };
+            return task;
+          });
+        } else if (msg_cmd === "batasAtas") {
+          myTask.update(task => {
+            task[numberTask] = { ...task[numberTask], batasAtas: parseInt(msg_payload) };
+            return task;
+          });
+        } else if (msg_cmd === "targetMixA") {
+          myTask.update(task => {
+            task[numberTask] = { ...task[numberTask], targetMixA: parseInt(msg_payload) };
+            return task;
+          });
+        } else if (msg_cmd === "targetMixB") {
+          myTask.update(task => {
+            task[numberTask] = { ...task[numberTask], targetMixB: parseInt(msg_payload) };
+            return task;
+          });
+        } else if (msg_cmd === "targetMixC") {
+          myTask.update(task => {
+            task[numberTask] = { ...task[numberTask], targetMixC: parseInt(msg_payload) };
+            return task;
+          });
+        } else if (msg_cmd === "mixingTarget") {
+          myTask.update(task => {
+            task[numberTask] = { ...task[numberTask], mixingTarget: parseInt(msg_payload) };
+            return task;
+          });
+        } else if (msg_cmd === "sensorVal") {
+          const sekarang = new Date();
+          myTask.update(task => {
+            task[numberTask] = { ...task[numberTask], sensorVal: parseInt(msg_payload), lastSeen: sekarang.toLocaleString('id-ID') };
+            return task;
+          });
+        }
+
       }
-    } else if (typeTask === msgType.TASK) {
-      if (msg_cmd === "infoTask") {
-        //console.log("mqtt msg: " + msg_payload)
-        //msg  {"enable":0,"aktuator1":1,"aktuator2":2,"nodeSensor":1,"batasBawah":31,"batasAtas":81,"mode":2,"nama":"Lengas","sensorVal":80}
-
-        const jsonData = JSON.parse(msg_payload); // Parse JSON 
-        //console.log("mqtt msg: " + JSON.stringify(jsonData))  
-        //console.log('LastSeen: ' + jsonData.lastSeen);
-        //debugESP32Time(jsonData.lastSeen)
-        //const lastSeenNow = unixToLocalString(jsonData.lastSeen);
-        const lastSeenNow = jsonData.lastSeen.toLocaleString('id-ID')
-
-        myTask.update(task => {
-          // Ubah nilai `a` pada elemen pertama
-          task[numberTask] = { ...task[numberTask], enable: jsonData.enable, aktuator1: jsonData.aktuator1, aktuator2: jsonData.aktuator2, sensorUse: jsonData.sensorUse, sensorVal: jsonData.sensorVal, batasBawah: jsonData.batasBawah, batasAtas: jsonData.batasAtas, mode: jsonData.mode, nama: jsonData.nama, lastSeen: lastSeenNow }; // Ganti nilai a
-          return task; // Kembalikan array yang telah dimodifikasi
-        });
-
-
-      } else if (msg_cmd === "enable") {
-        myTask.update(task => {
-          task[numberTask] = { ...task[numberTask], enable: parseInt(msg_payload) };
-          return task;
-        });
-        spinnerShow.update(spin => {
-          spin[numberTask] = false;
-          return spin;
-        });
-
-      } else if (msg_cmd === "aktuator1") {
-        myTask.update(task => {
-          task[numberTask] = { ...task[numberTask], aktuator1: parseInt(msg_payload) };
-          return task;
-        });
-      } else if (msg_cmd === "aktuator2") {
-        myTask.update(task => {
-          task[numberTask] = { ...task[numberTask], aktuator2: parseInt(msg_payload) };
-          return task;
-        });
-      } else if (msg_cmd === "jadwal") {
-        // myTaskNow[numberTask].aktuatorUse2 = parseInt(msg_payload);
-      } else if (msg_cmd === "sensorUse") {
-        myTask.update(task => {
-          task[numberTask] = { ...task[numberTask], nodeSensor: parseInt(msg_payload) };
-          return task;
-        });
-      } else if (msg_cmd === "batasBawah") {
-        myTask.update(task => {
-          task[numberTask] = { ...task[numberTask], batasBawah: parseInt(msg_payload) };
-          return task;
-        });
-      } else if (msg_cmd === "batasAtas") {
-        myTask.update(task => {
-          task[numberTask] = { ...task[numberTask], batasAtas: parseInt(msg_payload) };
-          return task;
-        });
-      } else if (msg_cmd === "targetMixA") {
-        myTask.update(task => {
-          task[numberTask] = { ...task[numberTask], targetMixA: parseInt(msg_payload) };
-          return task;
-        });
-      } else if (msg_cmd === "targetMixB") {
-        myTask.update(task => {
-          task[numberTask] = { ...task[numberTask], targetMixB: parseInt(msg_payload) };
-          return task;
-        });
-      } else if (msg_cmd === "targetMixC") {
-        myTask.update(task => {
-          task[numberTask] = { ...task[numberTask], targetMixC: parseInt(msg_payload) };
-          return task;
-        });
-      } else if (msg_cmd === "mixingTarget") {
-        myTask.update(task => {
-          task[numberTask] = { ...task[numberTask], mixingTarget: parseInt(msg_payload) };
-          return task;
-        });
-      } else if (msg_cmd === "sensorVal") {
-        const sekarang = new Date();
-        myTask.update(task => {
-          task[numberTask] = { ...task[numberTask], sensorVal: parseInt(msg_payload), lastSeen: sekarang.toLocaleString('id-ID') };
-          return task;
-        });
-      }
-
-    }
+    
   }
 }
 
@@ -707,13 +686,13 @@ export function mqttConnectionToggle() {
 
 export function bleConnectionToggle() {
   if (bleConnected) {
-    disconnect();
+    bleDisconnect();
   } else {
-    connect();
+    bleConnect();
   }
 }
 
-async function connect() {
+async function bleConnect() {
   if (!navigator.bluetooth) {
     ////logDisplay += "WebBluetooth API is not available.\r\n";
     return;
@@ -788,7 +767,7 @@ async function connect() {
     });
 }
 
-function disconnect() {
+export function bleDisconnect() {
   if (!bleDevice) {
     //logDisplay += "No Bluetooth Device connected...\n";
     return;

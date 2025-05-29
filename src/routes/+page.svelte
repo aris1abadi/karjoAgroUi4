@@ -34,6 +34,9 @@
 		sensorLengasList,
 		isDemo,
 		demoWait,
+		connectionStatus,
+		mqttDisconnect,
+		bleDisconnect,
 		display
 	} from '$lib/stores';
 
@@ -72,13 +75,15 @@
 			isActive: false
 		}
 	];
+	let displayList = ['MODE_BAR1', 'MODE_BAR2', 'MODE_ANGKA'];
 	let setupTitle = 'Setup';
 
 	// @ts-ignore
 	let lastMsg = null;
 
-	let lastDemo = $isDemo
-	let demoVal = lastDemo
+	let lastDemo = $isDemo;
+	let demoVal = lastDemo;
+	let newKkontrol = false;
 
 	// @ts-ignore
 	let header = 'Temperature';
@@ -172,9 +177,53 @@
 		}
 	}
 
+	function tambahKontrol() {
+		defaultModal = true;
+		newKkontrol = true;
+		setupTitle = 'Tambah Kontrol';
+		modeSelect = taskMode.MODE_INTERMITTEN;
+		namaSelect = 'Intermitten';
+
+		//alert($myTask[idx].nama)
+		//set pilih aktuator sesai data
+		aktuator1Select = 0;
+		aktuator2Select = 1;
+
+		targetAValue = 100;
+		targetBValue = 100;
+		targetCValue = 100;
+		rangeValue[0] = -5;
+		rangeValue[1] = 0;
+
+		// sensorList = sensorTemperatureList
+		if (modeSelect === taskMode.MODE_TEMPERATURE) {
+			sensorList = sensorTemperatureList;
+			sensorSelect = 0;
+			minSpinner = 10;
+			maxSpinner = 100;
+		} else if (modeSelect === taskMode.MODE_HUMIDITY) {
+			sensorList = sensorHumidityList;
+			sensorSelect = 0;
+			minSpinner = 10;
+			maxSpinner = 100;
+		} else if (modeSelect === taskMode.MODE_LENGAS) {
+			sensorList = sensorLengasList;
+			sensorSelect = 0;
+			minSpinner = 10;
+			maxSpinner = 100;
+		} else if (modeSelect === taskMode.MODE_INTERMITTEN) {
+			sensorList = sensorIntermittentList;
+			sensorSelect = 0;
+
+			minSpinner = -10;
+			maxSpinner = 10;
+		}
+	}
+
 	// @ts-ignore
 	export function setupClick(idx, mode) {
 		defaultModal = true;
+		newKkontrol = false;
 		setupIndex = idx;
 		setupMode = mode;
 		//load aktuator
@@ -184,7 +233,6 @@
 			setupTitle = 'Setup Auto' + $myTask[idx].nama;
 			modeSelect = $myTask[idx].mode;
 			namaSelect = $myTask[idx].nama;
-
 			//alert($myTask[idx].nama)
 			//set pilih aktuator sesai data
 			aktuator1Select = $myTask[idx].aktuator1 - 1;
@@ -223,8 +271,8 @@
 				sensorSelect = $myTask[idx].sensorUse - 1;
 				//batasBawahValue = $myTask[idx].batasBawah - 15;
 				//batasAtasValue = $myTask[idx].batasAtas - 15;
-				minSpinner = -15;
-				maxSpinner = 15;
+				minSpinner = -10;
+				maxSpinner = 10;
 			}
 		} else if (mode === $modalMode.SET_DEVICE) {
 			//mode setup device
@@ -305,8 +353,8 @@
 			rangeValue[0] = $myTask[setupIndex].batasBawah;
 			rangeValue[1] = $myTask[setupIndex].batasAtas;
 			sensorSelect = $myTask[setupIndex].sensorUse - 1;
-			minSpinner = -15;
-			maxSpinner = 15;
+			minSpinner = -10;
+			maxSpinner = 10;
 			namaSelect = 'Intermittent';
 		}
 		setupTitle = 'Setup Auto' + namaSelect;
@@ -355,8 +403,8 @@
 	}
 
 	function mapClamp(x) {
-		const in_min = -15;
-		const in_max = 15;
+		const in_min = -10;
+		const in_max = 10;
 		const out_min = 100;
 		const out_max = 0;
 		// Clamp input
@@ -418,7 +466,11 @@
 			$myTask[setupIndex].mode = modeSelect;
 
 			$myTask[setupIndex].sensorUse = sensorSelect + 1;
-			kirimMsg(msgType.TASK, setupIndex, 'updateTask', JSON.stringify($myTask[setupIndex]));
+			if (newKkontrol) {
+				kirimMsg(msgType.TASK, setupIndex, 'addTask', JSON.stringify($myTask[setupIndex]));
+			} else {
+				kirimMsg(msgType.TASK, setupIndex, 'updateTask', JSON.stringify($myTask[setupIndex]));
+			}
 			//console.log('Update Task: ' + JSON.stringify($myTask[setupIndex]));
 		} else {
 			//simpan
@@ -444,23 +496,28 @@
 	}
 
 	function demoChange() {
-		
 		//console.log($isDemo)
-		
+
 		$demoWait = true;
 		setTimeout(() => {
 			$demoWait = false;
-			demoVal = lastDemo
+			demoVal = lastDemo;
 		}, 5000);
 
 		let demomsg = '0';
 		if (demoVal) {
 			demomsg = '1';
-			lastDemo = true
-		}else{
+			lastDemo = true;
+		} else {
 			lastDemo = false;
 		}
 		kirimMsg(msgType.KONTROL, 0, 'demoMode', demomsg);
+	}
+
+	function exitPage() {
+		$isStarted = false;
+		mqttDisconnect();
+		bleDisconnect();
 	}
 
 	//update myTask
@@ -473,8 +530,7 @@
 </svelte:head>
 
 {#if !$isStarted}
-	<div class="grid w-full grid-cols-5 px-2">
-		<div></div>
+	<div class="mx-auto w-full max-w-md px-4">
 		<Button
 			color="light"
 			class="col-span-3 mt-24 h-20 w-full"
@@ -482,13 +538,11 @@
 		>
 			Sambung ke jaringan
 		</Button>
-		<div></div>
-		<div></div>
+
 		<Button color="blue" class="col-span-3 mt-8 h-20 w-full" on:click={() => bleConnectionToggle()}>
 			Sambung ke Local
 		</Button>
-		<div></div>
-		<div></div>
+
 		<Button
 			class="col-span-3 mt-8 h-20 w-full"
 			on:click={() => setupClick(1, $modalMode.SET_DEVICE)}
@@ -497,15 +551,37 @@
 		</Button>
 	</div>
 {:else}
-	<section>
+	<div class="mx-auto w-full max-w-md p-4">
 		<!--Header-->
 		<div class="text-center text-sm">karjoAgro</div>
 		<div class="text-center font-mono text-4xl font-bold text-white">Agro Kontrol</div>
-		<div class="mb-8 text-center text-xs text-white">{$networkMode} {$kontrolID}</div>
-
-		<div class="no-select grid w-full grid-cols-2 gap-8">
+		<div class="mb-8 mt-2 flex justify-center">
+			<div
+				class={$connectionStatus
+					? 'grid w-1/2 grid-cols-4  bg-white p-1 text-center text-xs font-bold text-lime-600'
+					: 'grid w-1/2 grid-cols-4  bg-white p-1 text-center text-xs font-bold text-red-600'}
+			>
+				<div class="col-span-3">
+					{$kontrolID}
+					{#if $connectionStatus}
+						Online
+					{:else}
+						Offline
+					{/if}
+				</div>
+				<div class="flex justify-center">
+					<img class="mr-2 h-4 w-4" src={$bleIsConnected ? 'bt2.png' : 'bt1.png'} alt="connectBT" />
+					<img
+						class="h-4 w-4"
+						src={$mqttIsConnected ? 'wifi.png' : 'no-wifi.png'}
+						alt="conectNetwork"
+					/>
+				</div>
+			</div>
+		</div>
+		<div class="no-select h-100 no-scrollbar grid w-full grid-cols-2 gap-8 overflow-y-scroll">
 			{#each $myTask as dataShow, idx}
-				<div class="h-42 w-full rounded-lg bg-white p-0 shadow">
+				<div class="h-42 col-span-2 w-full rounded-lg bg-white p-0 shadow">
 					<button
 						class={dataShow.enable == 0
 							? 'font-monospace mt-0 h-8 w-full  bg-red-500 text-center text-sm font-bold text-white '
@@ -536,7 +612,7 @@
 								</div>
 
 								<div class="col-span-2">
-									<div class=" w-full content-center text-center font-mono text-2xl font-bold">
+									<div class=" w-full content-center text-center font-mono text-4xl font-bold">
 										{dataShow.sensorVal}<small><small> cm</small></small>
 									</div>
 									<div style="font-size: x-small;text-align:center">
@@ -603,10 +679,10 @@
 								</div>
 							</div>
 						{:else}
-							<div class="mt-4 text-center font-mono text-3xl font-bold">
+							<div class="mt-4 text-center font-mono text-4xl font-bold">
 								{dataShow.sensorVal}{#if dataShow.mode === taskMode.MODE_HUMIDITY}%
 								{:else if dataShow.mode === taskMode.MODE_TEMPERATURE}&deg;C
-								{:else if dataShow.mode === taskMode.MODE_LENGAS}%
+								{:else if dataShow.mode === taskMode.MODE_LENGAS}<small>%</small>
 								{/if}
 							</div>
 
@@ -626,43 +702,46 @@
 					</div>
 				</div>
 			{/each}
-		</div>
-	</section>
-
-	<footer class="mt-4">
-		{#if $networkMode != networkSelect.MODE_LOCAL}
-			<div class="grid grid h-10 w-1/2 grid-cols-3 justify-items-center bg-green-100">
-				<button on:click={() => bleConnectionToggle()} class="h-8"
-					><img
-						class="h-6 w-6"
-						src={$bleIsConnected ? 'bt2.png' : 'bt1.png'}
-						alt="connectBT"
-					/></button
+			<div class="h-42 col-span-2 w-full rounded-lg bg-white p-0 shadow">
+				<button
+					class="font-monospace mt-0 h-8 w-full bg-red-500 text-center text-sm font-bold text-white"
 				>
+					Tambah Kontrol
+				</button>
+
+				<!-- svelte-ignore a11y-no-static-element-interactions -->
+				<button
+					class="h-24 w-full justify-items-center text-center text-9xl font-bold"
+					on:dblclick={() => tambahKontrol()}
+					>+
+				</button>
+			</div>
+		</div>
+
+		<footer class="mt-4">
+			{#if $networkMode != networkSelect.MODE_LOCAL}
+				<div class="grid grid h-10 w-1/2 grid-cols-2 justify-items-center bg-green-100">
+					<button on:click={() => exitPage()} class="h-8"
+						><img class="h-6 w-6" src="exit.png" alt="Keluar" /></button
+					>
+					<div>
+						<button on:click={() => setupClick(1, $modalMode.SET_DEVICE)} class="h-8">
+							<img class="h-6 w-6" src="setup2.png" alt="Setup" /></button
+						>
+					</div>
+				</div>
+			{:else}
 				<div>
-					<button on:click={() => setupClick(1, $modalMode.SET_DEVICE)} class="h-8">
-						<img class="h-6 w-6" src="setup2.png" alt="Setup" /></button
+					<button on:click={() => setupClick(1, $modalMode.SET_DEVICE)} class="justify-center">
+						<img class="h-8 w-8" src="setup2.png" alt="Setup" /></button
 					>
 				</div>
-				<button on:click={() => mqttConnectionToggle()} class="h-8"
-					><img
-						class="h-6 w-6"
-						src={$mqttIsConnected ? 'wifi.png' : 'no-wifi.png'}
-						alt="conectNetwork"
-					/></button
-				>
-			</div>
-		{:else}
-			<div>
-				<button on:click={() => setupClick(1, $modalMode.SET_DEVICE)} class="justify-center">
-					<img class="h-8 w-8" src="setup2.png" alt="Setup" /></button
-				>
-			</div>
-		{/if}
-		<p></p>
+			{/if}
+			<p></p>
 
-		<p class="mt-2 text-xs">agro kontrol by karjoAgro</p>
-	</footer>
+			<p class="mt-2 text-xs">agro kontrol by karjoAgro</p>
+		</footer>
+	</div>
 {/if}
 <Modal class="h-full w-full" title={setupTitle} bind:open={defaultModal}>
 	{#if setupMode === 0}
@@ -835,25 +914,54 @@
 					{/each}
 				</select>
 			</div>
+			<div class="mt-2 rounded-sm border border-gray-200 dark:border-gray-700">
+				<div class="mt-2 grid grid-cols-2 justify-items-center">
+					{#if $myTask[setupIndex].mode == taskMode.MODE_TEMPERATURE}
+						<div>OFF({rangeValue[0]})</div>
+						<div>ON({rangeValue[1]})</div>
+					{:else}
+						<div>ON({rangeValue[0]})</div>
+						<div>OFF({rangeValue[1]})</div>
+					{/if}
+				</div>
 
-			<div class="mt-4 grid grid-cols-2 justify-items-center">
-				{#if $myTask[setupIndex].mode == taskMode.MODE_TEMPERATURE}
-					<div>OFF({rangeValue[0]})</div>
-					<div>ON({rangeValue[1]})</div>
-				{:else}
-					<div>ON({rangeValue[0]})</div>
-					<div>OFF({rangeValue[1]})</div>
-				{/if}
+				<RangeSlider
+					range
+					pips
+					min={minSpinner}
+					max={maxSpinner}
+					on:change={() => rangeChange()}
+					bind:values={rangeValue}
+				/>
 			</div>
+			<div
+				class="mt-1 grid grid-cols-2 content-center items-center gap-2 rounded-sm border border-gray-200 p-2 ps-4 dark:border-gray-700"
+			>
+				<div class="col-span-2 text-center text-sm font-medium text-gray-900 dark:text-gray-300">
+					Tampilkan ke Display
+				</div>
+				<input
+					id="bordered-checkbox-1"
+					type="checkbox"
+					bind:checked={$myTask[setupIndex].useDisplay}
+					name="bordered-checkbox"
+					class="ml-8 h-4 w-4 rounded-sm border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600"
+				/>
 
-			<RangeSlider
-				range
-				pips
-				min={minSpinner}
-				max={maxSpinner}
-				on:change={() => rangeChange()}
-				bind:values={rangeValue}
-			/>
+				<div>
+					<select
+						id="pilihSensor"
+						bind:value={$myTask[setupIndex].displayMode}
+						class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+					>
+						{#each displayList as display, idx}
+							<option value={idx}>
+								{display}
+							</option>
+						{/each}
+					</select>
+				</div>
+			</div>
 		{/if}
 		<div class="grid h-10 w-3/4 grid-cols-3 gap-4 pl-4">
 			<Button color="red" on:click={() => (defaultModal = false)}>Keluar</Button>
@@ -862,133 +970,6 @@
 	{:else}
 		<Tabs tabStyle="underline">
 			{#if $isStarted}
-				<TabItem open title="Aktuator">
-					<div class="h-60 w-full overflow-auto">
-						{#each aktuatorList as aktuator, idx}
-							<div class="mb-4 grid h-10 w-full grid-cols-3 rounded border">
-								<button class="col-span-2"
-									>Aktuator{idx + 1} ({aktuator.nodeId} - {aktuator.nomerAktuator - 5})</button
-								>
-								<button
-									>{#if aktuator.val === 1}
-										ON
-									{:else}
-										OFF
-									{/if}</button
-								>
-							</div>
-						{/each}
-					</div>
-				</TabItem>
-				<TabItem title="Sensor">
-					<div class="h-60 w-full overflow-auto">
-						{#each sensorTemperatureList as sensor, idx}
-							<div class="mb-4 grid h-10 w-full grid-cols-3 rounded border">
-								<button class="col-span-2">SensorTemperature{idx + 1} ({sensor.nodeId})</button>
-								<button>{sensor.val}</button>
-							</div>
-						{/each}
-						<hr class="mb-4" />
-						{#each sensorHumidityList as sensor, idx}
-							<div class="mb-4 grid h-10 w-full grid-cols-3 rounded border">
-								<button class="col-span-2">SensorHumidity{idx + 1} ({sensor.nodeId})</button>
-								<button>{sensor.val} %</button>
-							</div>
-						{/each}
-						<hr class="mb-4" />
-						{#each sensorLengasList as sensor, idx}
-							<div class="mb-4 grid h-10 w-full grid-cols-3 rounded border">
-								<button class="col-span-2">SensorLengas{idx + 1} ({sensor.nodeId})</button>
-								<button>{sensor.val} %</button>
-							</div>
-						{/each}
-						<hr class="mb-4" />
-						{#each sensorIntermittentList as sensor, idx}
-							<div class="mb-4 grid h-10 w-full grid-cols-3 rounded border">
-								<button class="col-span-2">SensorIntermittent{idx + 1} ({sensor.nodeId})</button>
-								<button>{sensor.val}</button>
-							</div>
-						{/each}
-						<hr class="mb-4" />
-					</div>
-				</TabItem>
-				<TabItem title="Setup">
-					<div class="h-60 w-full overflow-auto">
-						<!--for setupkontroller network-->
-						<div class="mx-auto grid max-w-sm grid-cols-2 gap-4">
-							{#if $networkMode === networkSelect.MODE_BT}
-								<div class="col-span-2">
-									<input
-										id="checked-checkbox"
-										type="checkbox"
-										on:change={() => networkChange()}
-										bind:checked={onlineCheck}
-										class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600"
-									/>
-									<label
-										for="checked-checkbox"
-										class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-										>Online Mode</label
-									>
-								</div>
-	
-								<div class="col-span-2">Wifi Setup</div>
-								<input
-									type="text"
-									id="ssid"
-									bind:value={$networkSetup.ssid}
-									class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-									placeholder="SSID"
-									required
-								/>
-	
-								<input
-									type="password"
-									id="password"
-									bind:value={$networkSetup.password}
-									class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-									placeholder="Password"
-									required
-								/>
-							{:else}
-								<input
-									type="text"
-									bind:value={inputID}
-									class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-									placeholder={$kontrolID}
-									required
-								/>
-								<Button color="green" on:click={() => simpanTask()}>Simpan</Button>
-								<div class="col-span-2"></div>
-								{#if $isStarted}
-									<Toggle  bind:checked={demoVal} on:change={() => demoChange()}
-										>Demo
-										{#if $demoWait}
-											<Spinner class="me-3" bg="white" size="5" color="yellow" />
-										{/if}
-									</Toggle>
-								{/if}
-							{/if}
-							<!--
-	
-				<div class="col-span-2">Pilih Server</div>
-	
-				<select
-							bind:value={serverSelect}
-							on:change={() => serverSelectChange()}
-							
-							class="col-span-2 block w-full p-2 mb-1 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-						>
-							{#each serverList as server, idx}
-								<option value={idx}>{server}</option>
-							{/each}
-						</select>
-	
-			-->
-						</div>
-					</div>
-				</TabItem>
-				{:else}
 				<TabItem open title="Setup">
 					<div class="h-60 w-full overflow-auto">
 						<!--for setupkontroller network-->
@@ -1008,7 +989,7 @@
 										>Online Mode</label
 									>
 								</div>
-	
+
 								<div class="col-span-2">Wifi Setup</div>
 								<input
 									type="text"
@@ -1018,7 +999,149 @@
 									placeholder="SSID"
 									required
 								/>
-	
+
+								<input
+									type="password"
+									id="password"
+									bind:value={$networkSetup.password}
+									class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+									placeholder="Password"
+									required
+								/>
+							{:else}
+								<input
+									type="text"
+									bind:value={inputID}
+									class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+									placeholder={$kontrolID}
+									required
+								/>
+								<Button color="green" on:click={() => simpanTask()}>Simpan</Button>
+								<div class="col-span-2 mt-8"></div>
+								{#if $isStarted}
+									<Toggle bind:checked={demoVal} on:change={() => demoChange()}
+										>Demo
+										{#if $demoWait}
+											<Spinner class="me-3" bg="white" size="5" color="yellow" />
+										{/if}
+									</Toggle>
+								{/if}
+							{/if}
+							<!--
+
+			<div class="col-span-2">Pilih Server</div>
+
+			<select
+						bind:value={serverSelect}
+						on:change={() => serverSelectChange()}
+						
+						class="col-span-2 block w-full p-2 mb-1 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+					>
+						{#each serverList as server, idx}
+							<option value={idx}>{server}</option>
+						{/each}
+					</select>
+
+		-->
+						</div>
+					</div>
+				</TabItem>
+				<TabItem title="Aktuator">
+					<div class="h-60 w-full overflow-auto">
+						{#each aktuatorList as aktuator, idx}
+							<div class="mb-4 grid h-16 w-full grid-cols-3 rounded border p-2">
+								<button class="textsm col-span-2 ml-2 text-left font-bold"
+									>Aktuator{idx + 1}
+									<div class="text-xs font-extralight">
+										NodeId: {aktuator.nodeId} Aktuator: {aktuator.nomerAktuator - 5}
+									</div></button
+								>
+								<button class="text-sm font-bold"
+									>{#if aktuator.val === 1}
+										ON
+									{:else}
+										OFF
+									{/if}</button
+								>
+							</div>
+						{/each}
+					</div>
+				</TabItem>
+				<TabItem title="Sensor">
+					<div class="no-scrollbar h-60 w-full overflow-auto">
+						{#each sensorTemperatureList as sensor, idx}
+							<div class="mb-4 grid h-14 w-full grid-cols-3 rounded border">
+								<button class="col-span-2 ml-2 text-left text-sm font-bold"
+									>SensorTemperature{idx + 1}
+									<div class="text-xs font-extralight">NodeId: {sensor.nodeId}</div></button
+								>
+								<div class="mt-2 text-center font-bold">{sensor.val}°C</div>
+							</div>
+						{/each}
+						<hr class="mb-4" />
+						{#each sensorHumidityList as sensor, idx}
+							<div class="mb-4 grid h-14 w-full grid-cols-3 rounded border">
+								<button class="col-span-2 ml-2 text-left text-sm font-bold"
+									>SensorHumidity{idx + 1}
+									<div class="text-xs font-extralight">NodeId: {sensor.nodeId}</div></button
+								>
+								<div class="mt-2 text-center font-bold">{sensor.val}%</div>
+							</div>
+						{/each}
+						<hr class="mb-4" />
+						{#each sensorLengasList as sensor, idx}
+							<div class="mb-4 grid h-14 w-full grid-cols-3 rounded border">
+								<button class="col-span-2 ml-2 text-left text-sm font-bold"
+									>SensorLengas{idx + 1}
+									<div class="text-xs font-extralight">NodeId: {sensor.nodeId}</div></button
+								>
+								<div class="mt-2 text-center font-bold">{sensor.val}%</div>
+							</div>
+						{/each}
+						<hr class="mb-4" />
+						{#each sensorIntermittentList as sensor, idx}
+							<div class="mb-4 grid h-14 w-full grid-cols-3 rounded border">
+								<button class="col-span-2 ml-2 text-left text-sm font-bold"
+									>SensorIntermittent{idx + 1}
+									<div class="text-xs font-extralight">NodeId: {sensor.nodeId}</div></button
+								>
+								<div class="mt-2 text-center font-bold">{sensor.val}Cm</div>
+							</div>
+						{/each}
+						<hr class="mb-4" />
+					</div>
+				</TabItem>
+			{:else}
+				<TabItem open title="Setup">
+					<div class="h-60 w-full overflow-auto">
+						<!--for setupkontroller network-->
+						<div class="mx-auto grid max-w-sm grid-cols-2 gap-4">
+							{#if $networkMode === networkSelect.MODE_BT}
+								<div class="col-span-2">
+									<input
+										id="checked-checkbox"
+										type="checkbox"
+										on:change={() => networkChange()}
+										bind:checked={onlineCheck}
+										class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600"
+									/>
+									<label
+										for="checked-checkbox"
+										class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+										>Online Mode</label
+									>
+								</div>
+
+								<div class="col-span-2">Wifi Setup</div>
+								<input
+									type="text"
+									id="ssid"
+									bind:value={$networkSetup.ssid}
+									class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+									placeholder="SSID"
+									required
+								/>
+
 								<input
 									type="password"
 									id="password"
@@ -1041,32 +1164,15 @@
 									<Toggle bind:checked={demoVal} on:change={() => demoChange()}
 										>Demo
 										{#if $demoWait}
-											<Spinner class="ml-2 me-3" bg="white" size="5" color="yellow" />
+											<Spinner class="me-3 ml-2" bg="white" size="5" color="yellow" />
 										{/if}
 									</Toggle>
 								{/if}
 							{/if}
-							<!--
-	
-				<div class="col-span-2">Pilih Server</div>
-	
-				<select
-							bind:value={serverSelect}
-							on:change={() => serverSelectChange()}
-							
-							class="col-span-2 block w-full p-2 mb-1 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-						>
-							{#each serverList as server, idx}
-								<option value={idx}>{server}</option>
-							{/each}
-						</select>
-	
-			-->
 						</div>
 					</div>
 				</TabItem>
 			{/if}
-			
 		</Tabs>
 	{/if}
 </Modal>
@@ -1086,6 +1192,7 @@
 		display: flex;
 		flex-direction: column;
 		justify-content: top;
+		max-width: max-w-64;
 		align-items: top;
 		flex: 0.6;
 		margin-top: 16px;
