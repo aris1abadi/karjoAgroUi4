@@ -40,7 +40,8 @@ export const dispMode =
 {
   MODE_BAR1: 0,
   MODE_BAR2: 1,
-  MODE_ANGKA: 2,
+  MODE_BAR3: 2,
+  MODE_ANGKA: 3,
 
 };
 
@@ -119,11 +120,13 @@ export let aktuatorList = [{
 export let sensorLengasList = [{
   nodeId: "----",
   sensorType: nodeType.NODE_SOIL_MOISTURE,
+  battLevel:100,
   val: 0,
   isActive: false
 }, {
   nodeId: "----",
   sensorType: nodeType.NODE_SOIL_MOISTURE,
+  battLevel:100,
   val: 0,
   isActive: false
 }];
@@ -131,6 +134,7 @@ export let sensorLengasList = [{
 export let sensorTemperatureList = [{
   nodeId: "0002",
   sensorType: nodeType.NODE_TEMPERATURE,
+  battLevel:100,
   val: 0,
   isActive: false
 }, {
@@ -142,11 +146,13 @@ export let sensorTemperatureList = [{
 export let sensorHumidityList = [{
   nodeId: "0002",
   sensorType: nodeType.NODE_HUMIDITY,
+  battLevel:100,
   val: 0,
   isActive: false
 }, {
   nodeId: "0002",
   sensorType: nodeType.NODE_HUMIDITY,
+  battLevel:100,
   val: 0,
   isActive: false
 }];
@@ -154,11 +160,13 @@ export let sensorHumidityList = [{
 export let sensorIntermittentList = [{
   nodeId: "----",
   sensorType: nodeType.NODE_DISTANCE,
+  battLevel:0,
   val: 0,
   isActive: false
 }, {
   nodeId: "----",
   sensorType: nodeType.NODE_DISTANCE,
+  battLevel:0,
   val: 0,
   isActive: false
 }];
@@ -522,7 +530,7 @@ function cekMqttMsg(topic, msg_payload) {
             }
             //console.log(sensorHumidityList)
           }
-        } else if (msg_cmd === "InfoAllHumiditySensor") {
+        } else if (msg_cmd === "InfoAllSoilSensor") {
           if (lastMsg != msg_payload) {
             lastMsg = msg_payload;
             const newSoilSensor = JSON.parse(msg_payload).SoilSensor;
@@ -565,6 +573,11 @@ function cekMqttMsg(topic, msg_payload) {
             }
 
           }
+        } else if(msg_cmd === "infoExtDisplay"){
+          //format info display
+          let exkDisplay = msg_payload.split(',');
+          
+          
         }
       } else if (typeTask === msgType.TASK) {
         if (msg_cmd === "infoTask") {

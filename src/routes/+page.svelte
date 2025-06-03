@@ -60,6 +60,9 @@
 	let targetBValue = 0;
 	let targetCValue = 0;
 
+	let kontrolSelect = 0;
+	let displayModeSelect = 0;
+
 	let sensorSelect = 0;
 	let sensorList = [
 		{
@@ -75,7 +78,7 @@
 			isActive: false
 		}
 	];
-	let displayList = ['MODE_BAR1', 'MODE_BAR2', 'MODE_ANGKA'];
+	let displayList = ['MODE_BAR1', 'MODE_BAR2','MODE_BAR3', 'MODE_ANGKA'];
 	let setupTitle = 'Setup';
 
 	// @ts-ignore
@@ -128,6 +131,7 @@
 
 	const serverList = ['server1', 'server2', 'server3'];
 
+	const kontrolList = ['KONTROL1','KONTROL2','KONTROL3','KONTROL4','KONTROL5']
 	const modeList = [
 		'Mode Temperature',
 		'Mode Humidity',
@@ -458,6 +462,16 @@
 
 	function mixAClick() {
 		//alert("nama MixA click");
+	}
+
+	function updateDisplayClick(){
+		if(kontrolSelect > $myTask.length){
+			alert("kontrol tidak ditemukan")
+		}else{
+			let display_msg = String(kontrolSelect) + ','+ String(displayModeSelect) + ',-,'
+			kirimMsg(msgType.KONTROL, 0, 'setDisplay', display_msg);
+			console.log("update display " + display_msg);
+		}
 	}
 
 	function simpanTask() {
@@ -934,34 +948,6 @@
 					bind:values={rangeValue}
 				/>
 			</div>
-			<div
-				class="mt-1 grid grid-cols-2 content-center items-center gap-2 rounded-sm border border-gray-200 p-2 ps-4 dark:border-gray-700"
-			>
-				<div class="col-span-2 text-center text-sm font-medium text-gray-900 dark:text-gray-300">
-					Tampilkan ke Display
-				</div>
-				<input
-					id="bordered-checkbox-1"
-					type="checkbox"
-					bind:checked={$myTask[setupIndex].useDisplay}
-					name="bordered-checkbox"
-					class="ml-8 h-4 w-4 rounded-sm border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600"
-				/>
-
-				<div>
-					<select
-						id="pilihSensor"
-						bind:value={$myTask[setupIndex].displayMode}
-						class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-					>
-						{#each displayList as display, idx}
-							<option value={idx}>
-								{display}
-							</option>
-						{/each}
-					</select>
-				</div>
-			</div>
 		{/if}
 		<div class="grid h-10 w-3/4 grid-cols-3 gap-4 pl-4">
 			<Button color="red" on:click={() => (defaultModal = false)}>Keluar</Button>
@@ -971,7 +957,7 @@
 		<Tabs tabStyle="underline">
 			{#if $isStarted}
 				<TabItem open title="Setup">
-					<div class="h-60 w-full overflow-auto">
+					<div class="h-80 w-full overflow-auto">
 						<!--for setupkontroller network-->
 						<div class="mx-auto grid max-w-sm grid-cols-2 gap-4">
 							{#if $networkMode === networkSelect.MODE_BT}
@@ -1009,40 +995,56 @@
 									required
 								/>
 							{:else}
-								<input
-									type="text"
-									bind:value={inputID}
-									class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-									placeholder={$kontrolID}
-									required
-								/>
-								<Button color="green" on:click={() => simpanTask()}>Simpan</Button>
-								<div class="col-span-2 mt-8"></div>
+								<div class="col-span-2 grid h-12 w-full grid-cols-2 gap-4 rounded border p-2">
+									<input
+										type="text"
+										bind:value={inputID}
+										class=" h-8 w-full border-none bg-gray-50 text-sm text-gray-900"
+										placeholder={$kontrolID}
+										required
+									/>
+									<Button class="h-8 w-full" color="green" on:click={() => simpanTask()}
+										>Simpan</Button
+									>
+								</div>
 								{#if $isStarted}
-									<Toggle bind:checked={demoVal} on:change={() => demoChange()}
-										>Demo
-										{#if $demoWait}
-											<Spinner class="me-3" bg="white" size="5" color="yellow" />
-										{/if}
-									</Toggle>
+								<div class="col-span-2 grid h-40 w-full grid-cols-2 gap-4 rounded border p-2">
+								<div>
+									<label for="disp1" class="mb-1 block text-xs dark:text-white">Display</label>
+									<select
+										bind:value={kontrolSelect}										
+										id="disk1"
+										class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+									>
+										{#each kontrolList as kontrol, idx}
+											<option value={idx}>{kontrol}</option>
+										{/each}
+									</select>
+								</div>
+								<div>
+									<label for="disk2" class="mb-1 block text-xs">Mode</label>
+									<select										
+										id="disk2"
+										bind:value={displayModeSelect}
+										class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+									>
+										{#each displayList as display, idx}
+											<option value={idx}>{display}</option>
+										{/each}
+									</select>
+								</div>
+								<Button on:click={() => updateDisplayClick()} class="col-span-2">Update Display</Button>
+								</div>
+									<div class="center col-span-2 h-12 w-full rounded border px-8 py-2">
+										<Toggle bind:checked={demoVal} on:change={() => demoChange()}
+											>Demo
+											{#if $demoWait}
+												<Spinner class="me-3" bg="white" size="5" color="yellow" />
+											{/if}
+										</Toggle>
+									</div>
 								{/if}
 							{/if}
-							<!--
-
-			<div class="col-span-2">Pilih Server</div>
-
-			<select
-						bind:value={serverSelect}
-						on:change={() => serverSelectChange()}
-						
-						class="col-span-2 block w-full p-2 mb-1 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-					>
-						{#each serverList as server, idx}
-							<option value={idx}>{server}</option>
-						{/each}
-					</select>
-
-		-->
 						</div>
 					</div>
 				</TabItem>
@@ -1073,7 +1075,9 @@
 							<div class="mb-4 grid h-14 w-full grid-cols-3 rounded border">
 								<button class="col-span-2 ml-2 text-left text-sm font-bold"
 									>SensorTemperature{idx + 1}
-									<div class="text-xs font-extralight">NodeId: {sensor.nodeId}</div></button
+									<div class="text-xs font-extralight">
+										NodeId: {sensor.nodeId} Batt:{sensor.battLevel}%
+									</div></button
 								>
 								<div class="mt-2 text-center font-bold">{sensor.val}°C</div>
 							</div>
@@ -1083,7 +1087,9 @@
 							<div class="mb-4 grid h-14 w-full grid-cols-3 rounded border">
 								<button class="col-span-2 ml-2 text-left text-sm font-bold"
 									>SensorHumidity{idx + 1}
-									<div class="text-xs font-extralight">NodeId: {sensor.nodeId}</div></button
+									<div class="text-xs font-extralight">
+										NodeId: {sensor.nodeId} Batt:{sensor.battLevel}%
+									</div></button
 								>
 								<div class="mt-2 text-center font-bold">{sensor.val}%</div>
 							</div>
@@ -1093,7 +1099,9 @@
 							<div class="mb-4 grid h-14 w-full grid-cols-3 rounded border">
 								<button class="col-span-2 ml-2 text-left text-sm font-bold"
 									>SensorLengas{idx + 1}
-									<div class="text-xs font-extralight">NodeId: {sensor.nodeId}</div></button
+									<div class="text-xs font-extralight">
+										NodeId: {sensor.nodeId} Batt:{sensor.battLevel}%
+									</div></button
 								>
 								<div class="mt-2 text-center font-bold">{sensor.val}%</div>
 							</div>
@@ -1103,7 +1111,9 @@
 							<div class="mb-4 grid h-14 w-full grid-cols-3 rounded border">
 								<button class="col-span-2 ml-2 text-left text-sm font-bold"
 									>SensorIntermittent{idx + 1}
-									<div class="text-xs font-extralight">NodeId: {sensor.nodeId}</div></button
+									<div class="text-xs font-extralight">
+										NodeId: {sensor.nodeId} Batt:{sensor.battLevel}%
+									</div></button
 								>
 								<div class="mt-2 text-center font-bold">{sensor.val}Cm</div>
 							</div>
