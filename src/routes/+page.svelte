@@ -78,7 +78,7 @@
 			isActive: false
 		}
 	];
-	let displayList = ['MODE_BAR1', 'MODE_BAR2','MODE_BAR3', 'MODE_ANGKA'];
+	let displayList = ['MODE_BAR1', 'MODE_BAR2', 'MODE_BAR3', 'MODE_ANGKA'];
 	let setupTitle = 'Setup';
 
 	// @ts-ignore
@@ -131,7 +131,7 @@
 
 	const serverList = ['server1', 'server2', 'server3'];
 
-	const kontrolList = ['KONTROL1','KONTROL2','KONTROL3','KONTROL4','KONTROL5']
+	const kontrolList = ['KONTROL1', 'KONTROL2', 'KONTROL3', 'KONTROL4', 'KONTROL5'];
 	const modeList = [
 		'Mode Temperature',
 		'Mode Humidity',
@@ -216,7 +216,7 @@
 			minSpinner = 10;
 			maxSpinner = 100;
 		} else if (modeSelect === taskMode.MODE_INTERMITTEN) {
-			sensorList = sensorIntermittentList;
+			sensorList = $sensorIntermittentList;
 			sensorSelect = 0;
 
 			minSpinner = -10;
@@ -271,7 +271,7 @@
 				minSpinner = 10;
 				maxSpinner = 100;
 			} else if ($myTask[idx].mode === taskMode.MODE_INTERMITTEN) {
-				sensorList = sensorIntermittentList;
+				sensorList = $sensorIntermittentList;
 				sensorSelect = $myTask[idx].sensorUse - 1;
 				//batasBawahValue = $myTask[idx].batasBawah - 15;
 				//batasAtasValue = $myTask[idx].batasAtas - 15;
@@ -351,7 +351,7 @@
 			maxSpinner = 100;
 			namaSelect = 'Lengas';
 		} else if (modeSelect === taskMode.MODE_INTERMITTEN) {
-			sensorList = sensorIntermittentList;
+			sensorList = $sensorIntermittentList;
 			//batasBawahValue = $myTask[setupIndex].batasBawah - 15;
 			//batasAtasValue = $myTask[setupIndex].batasAtas - 15;
 			rangeValue[0] = $myTask[setupIndex].batasBawah;
@@ -464,13 +464,13 @@
 		//alert("nama MixA click");
 	}
 
-	function updateDisplayClick(){
-		if(kontrolSelect > $myTask.length){
-			alert("kontrol tidak ditemukan")
-		}else{
-			let display_msg = String(kontrolSelect) + ','+ String(displayModeSelect) + ',-,'
+	function updateDisplayClick() {
+		if (kontrolSelect > $myTask.length) {
+			alert('kontrol tidak ditemukan');
+		} else {
+			let display_msg = String(kontrolSelect) + ',' + String(displayModeSelect) + ',-,';
 			kirimMsg(msgType.KONTROL, 0, 'setDisplay', display_msg);
-			console.log("update display " + display_msg);
+			console.log('update display ' + display_msg);
 		}
 	}
 
@@ -533,6 +533,7 @@
 		mqttDisconnect();
 		bleDisconnect();
 	}
+
 
 	//update myTask
 	// $: myTask = myTask
@@ -994,6 +995,8 @@
 									placeholder="Password"
 									required
 								/>
+								<Button class="col-span-2 h-12" color="green" on:click={() => simpanTask()}>Simpan WIFI</Button>
+
 							{:else}
 								<div class="col-span-2 grid h-12 w-full grid-cols-2 gap-4 rounded border p-2">
 									<input
@@ -1008,33 +1011,35 @@
 									>
 								</div>
 								{#if $isStarted}
-								<div class="col-span-2 grid h-40 w-full grid-cols-2 gap-4 rounded border p-2">
-								<div>
-									<label for="disp1" class="mb-1 block text-xs dark:text-white">Display</label>
-									<select
-										bind:value={kontrolSelect}										
-										id="disk1"
-										class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-									>
-										{#each kontrolList as kontrol, idx}
-											<option value={idx}>{kontrol}</option>
-										{/each}
-									</select>
-								</div>
-								<div>
-									<label for="disk2" class="mb-1 block text-xs">Mode</label>
-									<select										
-										id="disk2"
-										bind:value={displayModeSelect}
-										class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-									>
-										{#each displayList as display, idx}
-											<option value={idx}>{display}</option>
-										{/each}
-									</select>
-								</div>
-								<Button on:click={() => updateDisplayClick()} class="col-span-2">Update Display</Button>
-								</div>
+									<div class="col-span-2 grid h-40 w-full grid-cols-2 gap-4 rounded border p-2">
+										<div>
+											<label for="disp1" class="mb-1 block text-xs dark:text-white">Display</label>
+											<select
+												bind:value={kontrolSelect}
+												id="disk1"
+												class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+											>
+												{#each kontrolList as kontrol, idx}
+													<option value={idx}>{kontrol}</option>
+												{/each}
+											</select>
+										</div>
+										<div>
+											<label for="disk2" class="mb-1 block text-xs">Mode</label>
+											<select
+												id="disk2"
+												bind:value={displayModeSelect}
+												class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+											>
+												{#each displayList as display, idx}
+													<option value={idx}>{display}</option>
+												{/each}
+											</select>
+										</div>
+										<Button on:click={() => updateDisplayClick()} class="col-span-2"
+											>Update Display</Button
+										>
+									</div>
 									<div class="center col-span-2 h-12 w-full rounded border px-8 py-2">
 										<Toggle bind:checked={demoVal} on:change={() => demoChange()}
 											>Demo
@@ -1054,7 +1059,7 @@
 							<div class="mb-4 grid h-16 w-full grid-cols-3 rounded border p-2">
 								<button class="textsm col-span-2 ml-2 text-left font-bold"
 									>Aktuator{idx + 1}
-									<div class="text-xs font-extralight">
+									<div class="text-xs font-normal">
 										NodeId: {aktuator.nodeId} Aktuator: {aktuator.nomerAktuator - 5}
 									</div></button
 								>
@@ -1072,50 +1077,146 @@
 				<TabItem title="Sensor">
 					<div class="no-scrollbar h-60 w-full overflow-auto">
 						{#each sensorTemperatureList as sensor, idx}
-							<div class="mb-4 grid h-14 w-full grid-cols-3 rounded border">
-								<button class="col-span-2 ml-2 text-left text-sm font-bold"
-									>SensorTemperature{idx + 1}
-									<div class="text-xs font-extralight">
+							<div
+								class={sensor.isConfig
+									? 'mb-4 grid h-32 w-full grid-cols-3 content-start rounded border'
+									: 'mb-4 grid h-16 w-full grid-cols-3 content-start rounded border'}
+							>
+								<button
+									on:click={() =>
+										(sensorTemperatureList[idx].isConfig = !sensorTemperatureList[idx].isConfig)}
+									class={sensor.isConfig
+										? 'col-span-2 h-14 rounded bg-gray-200 text-left text-sm font-bold'
+										: 'col-span-2 h-14 rounded bg-gray-100 text-left text-sm font-bold'}
+									><div class="ml-2 mt-2 font-bold">SensorTemperature{idx + 1}</div>
+									<div class="ml-2 text-xs font-normal">
 										NodeId: {sensor.nodeId} Batt:{sensor.battLevel}%
 									</div></button
 								>
-								<div class="mt-2 text-center font-bold">{sensor.val}°C</div>
+								<button
+									class={sensor.isConfig
+										? 'bg-gray-200 text-center font-bold'
+										: 'bg-gray-100 text-center font-bold'}>{sensor.val}%</button
+								>
+								{#if sensor.isConfig}
+									<div class="ml-2 mt-2 text-xs ">Snr:{sensor.snr}</div>
+									<div class="mt-2 text-xs ">Rssi:{sensor.rssi}</div>
+									<div class="mt-2 text-xs ">val:{sensor.rawVal}</div>
+
+									<div class="col-span-3 my-2 ml-2 text-xs ">
+										lastSeen:{sensor.lastSeen}
+									</div>
+								{/if}
 							</div>
 						{/each}
 						<hr class="mb-4" />
 						{#each sensorHumidityList as sensor, idx}
-							<div class="mb-4 grid h-14 w-full grid-cols-3 rounded border">
-								<button class="col-span-2 ml-2 text-left text-sm font-bold"
-									>SensorHumidity{idx + 1}
-									<div class="text-xs font-extralight">
+							<div
+								class={sensor.isConfig
+									? 'mb-4 grid h-32 w-full grid-cols-3 content-start rounded border'
+									: 'mb-4 grid h-16 w-full grid-cols-3 content-start rounded border'}
+							>
+								<button
+									on:click={() =>
+										(sensorHumidityList[idx].isConfig = !sensorHumidityList[idx].isConfig)}
+									class={sensor.isConfig
+										? 'col-span-2 h-14 rounded bg-gray-200 text-left text-sm font-bold'
+										: 'col-span-2 h-14 rounded bg-gray-100 text-left text-sm font-bold'}
+									><div class="ml-2 mt-2 font-bold">SensorHumidity{idx + 1}</div>
+									<div class="ml-2 text-xs font-normal">
 										NodeId: {sensor.nodeId} Batt:{sensor.battLevel}%
 									</div></button
 								>
-								<div class="mt-2 text-center font-bold">{sensor.val}%</div>
+								<button
+									class={sensor.isConfig
+										? 'bg-gray-200 text-center font-bold'
+										: 'bg-gray-100 text-center font-bold'}>{sensor.val}%</button
+								>
+								{#if sensor.isConfig}
+									<div class="ml-2 mt-2 text-xs font-normal">Snr:{sensor.snr}</div>
+									<div class="mt-2 text-xs font-normal">Rssi:{sensor.rssi}</div>
+									<div class="mt-2 text-xs font-normal">val:{sensor.rawVal}</div>
+
+									<div class="col-span-3 my-2 ml-2 text-xs font-normal">
+										lastSeen:{sensor.lastSeen}
+									</div>
+								{/if}
 							</div>
 						{/each}
 						<hr class="mb-4" />
 						{#each sensorLengasList as sensor, idx}
-							<div class="mb-4 grid h-14 w-full grid-cols-3 rounded border">
-								<button class="col-span-2 ml-2 text-left text-sm font-bold"
-									>SensorLengas{idx + 1}
-									<div class="text-xs font-extralight">
+							<div
+								class={sensor.isConfig
+									? 'mb-4 grid h-32 w-full grid-cols-3 content-start rounded border'
+									: 'mb-4 grid h-16 w-full grid-cols-3 content-start rounded border'}
+							>
+								<button
+									on:click={() =>
+										(sensorLengasList[idx].isConfig = !sensorLengasList[idx].isConfig)}
+									class={sensor.isConfig
+										? 'col-span-2 h-14 rounded bg-gray-200 text-left text-sm font-bold'
+										: 'col-span-2 h-14 rounded bg-gray-100 text-left text-sm font-bold'}
+									><div class="ml-2 mt-2 font-bold">SensorLengas{idx + 1}</div>
+									<div class="ml-2 text-xs font-normal">
 										NodeId: {sensor.nodeId} Batt:{sensor.battLevel}%
 									</div></button
 								>
-								<div class="mt-2 text-center font-bold">{sensor.val}%</div>
+								<button
+									class={sensor.isConfig
+										? 'bg-gray-200 text-center font-bold'
+										: 'bg-gray-100 text-center font-bold'}>{sensor.val}%</button
+								>
+								{#if sensor.isConfig}
+									<div class="ml-2  text-xs font-normal">Snr:{sensor.snr}</div>
+									<div class="text-xs font-normal">Rssi:{sensor.rssi}</div>
+									<div class=" text-xs font-normal">val:{sensor.rawVal}</div>
+									
+									<div class="ml-2  text-xs font-normal">minVal:{sensor.minValue}</div>
+									<div class="text-xs font-normal">maxVal:{sensor.maxValue}</div>
+									<div></div>	
+
+									<div class="col-span-3 ml-2 text-xs font-normal">
+										lastSeen:{sensor.lastSeen}
+									</div>
+								{/if}
 							</div>
 						{/each}
 						<hr class="mb-4" />
-						{#each sensorIntermittentList as sensor, idx}
-							<div class="mb-4 grid h-14 w-full grid-cols-3 rounded border">
-								<button class="col-span-2 ml-2 text-left text-sm font-bold"
-									>SensorIntermittent{idx + 1}
-									<div class="text-xs font-extralight">
+						{#each $sensorIntermittentList as sensor, idx}
+							<div
+								class={sensor.isConfig
+									? 'mb-4 grid h-34 w-full grid-cols-3 content-start rounded border'
+									: 'mb-4 grid h-16 w-full grid-cols-3 content-start rounded border'}
+							>
+								<button
+									on:click={() =>
+										($sensorIntermittentList[idx].isConfig = !$sensorIntermittentList[idx].isConfig)}
+									class={sensor.isConfig
+										? 'col-span-2 h-14 rounded bg-gray-200 text-left text-sm font-bold'
+										: 'col-span-2 h-14 rounded bg-gray-100 text-left text-sm font-bold'}
+									><div class="ml-2 mt-2 font-bold">SensorIntermittent{idx + 1}</div>
+									<div class="ml-2 text-xs font-normal">
 										NodeId: {sensor.nodeId} Batt:{sensor.battLevel}%
 									</div></button
 								>
-								<div class="mt-2 text-center font-bold">{sensor.val}Cm</div>
+								<button
+									class={sensor.isConfig
+										? 'bg-gray-200 text-center font-bold'
+										: 'bg-gray-100 text-center font-bold'}>{sensor.val} cm</button
+								>
+								{#if sensor.isConfig}
+									<div class="ml-2  text-xs font-normal">Snr:{sensor.snr}</div>
+									<div class="text-xs font-normal">Rssi:{sensor.rssi}</div>
+									<div class=" text-xs font-normal">val:{sensor.rawVal}</div>
+									
+									<div class="ml-2  text-xs font-normal">minVal:{sensor.minValue}</div>
+									<div class="text-xs font-normal">maxVal:{sensor.maxValue}</div>
+									<div></div>	
+
+									<div class="col-span-3 ml-2 text-xs font-normal">
+										lastSeen:{sensor.lastSeen}
+									</div>
+								{/if}
 							</div>
 						{/each}
 						<hr class="mb-4" />
@@ -1198,17 +1299,7 @@
 
 		background-repeat: no-repeat; /* Jangan ulangi gambar */
 	}
-	section {
-		display: flex;
-		flex-direction: column;
-		justify-content: top;
-		max-width: max-w-64;
-		align-items: top;
-		flex: 0.6;
-		margin-top: 16px;
-		margin-left: 24px;
-		margin-right: 24px;
-	}
+
 	.no-select {
 		-webkit-user-select: none;
 		-moz-user-select: none;
@@ -1229,8 +1320,10 @@
 			padding: 12px 0;
 		}
 	}
+	/*
 	.rangePips :is(.in-range, .selected) {
 		background: #f00;
 		width: 2px;
 	}
+		*/
 </style>
