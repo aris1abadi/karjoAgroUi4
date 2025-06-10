@@ -1,6 +1,16 @@
 <script>
-	import { Button, Modal, Spinner, Tabs, TabItem, Toggle } from 'flowbite-svelte';
-
+	import {
+		Button,
+		Modal,
+		Spinner,
+		Tabs,
+		TabItem,
+		Toggle,
+		Input,
+		Label,
+		InputAddon
+	} from 'flowbite-svelte';
+	import { EyeOutline, EyeSlashOutline } from 'flowbite-svelte-icons';
 	import { onMount } from 'svelte';
 	import { get } from 'svelte/store';
 	import RangeSlider from 'svelte-range-slider-pips';
@@ -37,34 +47,39 @@
 		connectionStatus,
 		mqttDisconnect,
 		bleDisconnect,
-		display
+		display,
+		loginStart,
+		loginWait
 	} from '$lib/stores';
 
-	let defaultModal = false;
+	let showPassword = $state(false);
+
+	let defaultModal = $state(false);
 	let myTaskNow = null;
 
 	let batasBawahValue = 30;
 	let batasAtasValue = 32;
-	let minSpinner = 10;
-	let maxSpinner = 100;
+	let minSpinner = $state(10);
+	let maxSpinner = $state(100);
 	let volume = 80;
 
-	let aktuator1Select = 0;
-	let aktuator2Select = 0;
+	let aktuator1Select = $state(0);
+	let aktuator2Select = $state(0);
 	let aktuatorMixASelect = 0;
 	let aktuatorMixBSelect = 0;
 	let aktuatorMixCSelect = 0;
 	let aktuatorAdukSelect = 0;
 	let aktuatorMixOutSelect = 0;
-	let targetAValue = 0;
-	let targetBValue = 0;
-	let targetCValue = 0;
+	let targetAValue = $state(0);
+	let targetBValue = $state(0);
+	let targetCValue = $state(0);
 
-	let kontrolSelect = 0;
-	let displayModeSelect = 0;
+	let kontrolSelect = $state(0);
+	let displayModeSelect = $state(0);
+	let myPass = $state('demoPass');
 
-	let sensorSelect = 0;
-	let sensorList = [
+	let sensorSelect = $state(0);
+	let sensorList = $state([
 		{
 			nodeId: '----',
 			sensorType: nodeType.NODE_DISTANCE,
@@ -77,21 +92,22 @@
 			val: 0,
 			isActive: false
 		}
-	];
+	]);
 	let displayList = ['MODE_BAR1', 'MODE_BAR2', 'MODE_BAR3', 'MODE_ANGKA'];
-	let setupTitle = 'Setup';
+	let setupTitle = $state('Setup');
 
 	// @ts-ignore
 	let lastMsg = null;
 
 	let lastDemo = $isDemo;
-	let demoVal = lastDemo;
+	let demoVal = $state(lastDemo);
 	let newKkontrol = false;
+	//let loginWait = $state(false);
 
 	// @ts-ignore
 	let header = 'Temperature';
 	const myKontrolID = get(kontrolID);
-	let inputID = myKontrolID;
+	let inputID = $state(myKontrolID);
 
 	// Gunakan onMount agar manipulasi DOM hanya terjadi di client-side
 	onMount(() => {
@@ -139,10 +155,10 @@
 		'Mode intermittent',
 		'Mode Mix'
 	];
-	let rangeValue = [20, 80];
+	let rangeValue = $state([20, 80]);
 
-	let setupIndex = 0;
-	let setupMode = $modalMode.SET_TASK; //0 mode set task,1 mode set device,3 mode alert
+	let setupIndex = $state(0);
+	let setupMode = $state($modalMode.SET_TASK); //0 mode set task,1 mode set device,3 mode alert
 	/*
 	function openFullscreen() {
 		const element = document.documentElement;
@@ -310,8 +326,8 @@
 
 		//alert("sensor temperture select: " + sensorSelect + 1);
 	}
-	let modeSelect = 0;
-	let namaSelect = '';
+	let modeSelect = $state(0);
+	let namaSelect = $state('');
 
 	function modeSelect_click() {
 		const tp = 'auto' + $myTask[setupIndex].nama;
@@ -498,7 +514,7 @@
 		defaultModal = false;
 	}
 
-	let onlineCheck = false;
+	let onlineCheck = $state(false);
 
 	function networkChange() {
 		console.log('online check ' + onlineCheck);
@@ -534,6 +550,18 @@
 		bleDisconnect();
 	}
 
+	function loginClick() {
+		$loginWait = true;
+		setTimeout(() => loginTimeOut(), 10000);
+		loginStart(myPass);
+	}
+
+	function loginTimeOut() {
+		if ($loginWait) {
+			$loginWait = false;
+			alert('kontroller tidak meresponse\nCek koneksi atau kontrollerId');
+		}
+	}
 
 	//update myTask
 	// $: myTask = myTask
@@ -546,24 +574,42 @@
 
 {#if !$isStarted}
 	<div class="mx-auto w-full max-w-md px-4">
-		<Button
-			color="light"
-			class="col-span-3 mt-24 h-20 w-full"
-			on:click={() => mqttConnectionToggle()}
-		>
-			Sambung ke jaringan
-		</Button>
+		<div class="mt-16 text-center font-mono text-2xl font-bold text-blue-800">
+			Kontrol {$kontrolID}
+		</div>
+		<div class="mt-8">
+			<Input
+				id="show-password"
+				type={showPassword ? 'text' : 'password'}
+				placeholder="Password anda"
+				bind:value={myPass}
+				size="lg"
+				class="pl-10"
+			>
+				{#snippet left()}
+					<button onclick={() => (showPassword = !showPassword)} class="pointer-events-auto">
+						{#if showPassword}
+							<EyeOutline class="h-6 w-6" />
+						{:else}
+							<EyeSlashOutline class="h-6 w-6" />
+						{/if}
+					</button>
+				{/snippet}
+			</Input>
+		</div>
+		<Button color="blue" class="mt-4 h-12 w-full" onclick={() => loginClick()}>
+			{#if $loginWait}
+				<Spinner class="me-3" bg="white" size="6" color="yellow" />
+			{/if}
 
-		<Button color="blue" class="col-span-3 mt-8 h-20 w-full" on:click={() => bleConnectionToggle()}>
-			Sambung ke Local
-		</Button>
-
-		<Button
-			class="col-span-3 mt-8 h-20 w-full"
-			on:click={() => setupClick(1, $modalMode.SET_DEVICE)}
+			Login</Button
 		>
-			Setup {$kontrolID}
-		</Button>
+		<div class=" mt-4 grid grid-cols-2 gap-4">
+			<button onclick={() => setupClick(1, $modalMode.SET_DEVICE)}>set ID kontroller</button>
+			<button onclick={() => bleConnectionToggle()}>connect BT</button>
+		</div>
+
+		
 	</div>
 {:else}
 	<div class="mx-auto w-full max-w-md p-4">
@@ -601,7 +647,7 @@
 						class={dataShow.enable == 0
 							? 'font-monospace mt-0 h-8 w-full  bg-red-500 text-center text-sm font-bold text-white '
 							: 'font-monospace mt-0 h-8 w-full  bg-green-500 text-center text-sm font-bold text-white '}
-						on:click={() => enableClick(idx)}
+						onclick={() => enableClick(idx)}
 					>
 						{#if $spinnerShow[idx]}
 							<Spinner class="me-3" bg="white" size="5" color="yellow" />
@@ -610,10 +656,9 @@
 						Auto{dataShow.nama}
 					</button>
 
-					<!-- svelte-ignore a11y-no-static-element-interactions -->
-					<div
+					<button
 						class="h-24 w-full justify-items-center"
-						on:dblclick={() => setupClick(idx, $modalMode.SET_TASK)}
+						ondblclick={() => setupClick(idx, $modalMode.SET_TASK)}
 					>
 						{#if dataShow.mode === taskMode.MODE_INTERMITTEN}
 							<div class="mt-2 grid h-24 w-full grid-cols-3 place-items-center gap-2">
@@ -714,7 +759,7 @@
 								lastSeen: {dataShow.lastSeen}
 							</div>
 						{/if}
-					</div>
+					</button>
 				</div>
 			{/each}
 			<div class="h-42 col-span-2 w-full rounded-lg bg-white p-0 shadow">
@@ -724,10 +769,9 @@
 					Tambah Kontrol
 				</button>
 
-				<!-- svelte-ignore a11y-no-static-element-interactions -->
 				<button
 					class="h-24 w-full justify-items-center text-center text-9xl font-bold"
-					on:dblclick={() => tambahKontrol()}
+					ondblclick={() => tambahKontrol()}
 					>+
 				</button>
 			</div>
@@ -736,18 +780,18 @@
 		<footer class="mt-4">
 			{#if $networkMode != networkSelect.MODE_LOCAL}
 				<div class="grid grid h-10 w-1/2 grid-cols-2 justify-items-center bg-green-100">
-					<button on:click={() => exitPage()} class="h-8"
+					<button onclick={() => exitPage()} class="h-8"
 						><img class="h-6 w-6" src="exit.png" alt="Keluar" /></button
 					>
 					<div>
-						<button on:click={() => setupClick(1, $modalMode.SET_DEVICE)} class="h-8">
+						<button onclick={() => setupClick(1, $modalMode.SET_DEVICE)} class="h-8">
 							<img class="h-6 w-6" src="setup2.png" alt="Setup" /></button
 						>
 					</div>
 				</div>
 			{:else}
 				<div>
-					<button on:click={() => setupClick(1, $modalMode.SET_DEVICE)} class="justify-center">
+					<button onclick={() => setupClick(1, $modalMode.SET_DEVICE)} class="justify-center">
 						<img class="h-8 w-8" src="setup2.png" alt="Setup" /></button
 					>
 				</div>
@@ -766,7 +810,7 @@
 				<select
 					id="pilihSensor"
 					bind:value={modeSelect}
-					on:change={() => modeSelect_click()}
+					onchange={() => modeSelect_click()}
 					class="mb-1 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
 				>
 					{#each modeList as mode, idx}
@@ -804,7 +848,7 @@
 							step="100"
 							bind:value={targetAValue}
 							class="mb-6 h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 dark:bg-gray-700"
-							on:change={targetAValue_change}
+							onchange={targetAValue_change}
 						/>
 					</span>
 				</div>
@@ -823,7 +867,7 @@
 							step="100"
 							bind:value={targetBValue}
 							class="mb-6 h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 dark:bg-gray-700"
-							on:change={targetBValue_change}
+							onchange={targetBValue_change}
 						/>
 					</span>
 				</div>
@@ -842,7 +886,7 @@
 							max="2000"
 							step="100"
 							class="mb-6 h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 dark:bg-gray-700"
-							on:change={targetCValue_change}
+							onchange={targetCValue_change}
 						/>
 					</span>
 				</div>
@@ -854,7 +898,7 @@
 					<input
 						type="text"
 						id="namaMixA"
-						on:mouseenter={() => mixAClick()}
+						onmouseenter={() => mixAClick()}
 						class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
 						placeholder={$myTask[setupIndex].mixAnama}
 						required
@@ -878,7 +922,7 @@
 					<label for="small1" class="mb-1 block text-xs dark:text-white">Pilih Aktuator1</label>
 					<select
 						bind:value={aktuator1Select}
-						on:change={() => aktuatorSelect_click(1)}
+						onchange={() => aktuatorSelect_click(1)}
 						id="small1"
 						class="mb-1 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
 					>
@@ -891,7 +935,7 @@
 					<label for="small2" class="mb-1 block text-xs">Pilih Aktuator2</label>
 					<select
 						bind:value={aktuator2Select}
-						on:change={() => aktuatorSelect_click(2)}
+						onchange={() => aktuatorSelect_click(2)}
 						id="small2"
 						class="mb-1 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
 					>
@@ -911,7 +955,7 @@
 				<select
 					id="pilihSensor"
 					bind:value={sensorSelect}
-					on:change={() => sensorSelect_click()}
+					onchange={() => sensorSelect_click()}
 					class="mb-1 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
 				>
 					{#each sensorList as sensor, idx}
@@ -945,14 +989,14 @@
 					pips
 					min={minSpinner}
 					max={maxSpinner}
-					on:change={() => rangeChange()}
+					onchange={() => rangeChange()}
 					bind:values={rangeValue}
 				/>
 			</div>
 		{/if}
 		<div class="grid h-10 w-3/4 grid-cols-3 gap-4 pl-4">
-			<Button color="red" on:click={() => (defaultModal = false)}>Keluar</Button>
-			<Button color="green" on:click={() => simpanTask()}>Simpan</Button>
+			<Button color="red" onclick={() => (defaultModal = false)}>Keluar</Button>
+			<Button color="green" onclick={() => simpanTask()}>Simpan</Button>
 		</div>
 	{:else}
 		<Tabs tabStyle="underline">
@@ -966,7 +1010,7 @@
 									<input
 										id="checked-checkbox"
 										type="checkbox"
-										on:change={() => networkChange()}
+										onchange={() => networkChange()}
 										bind:checked={onlineCheck}
 										class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600"
 									/>
@@ -995,8 +1039,9 @@
 									placeholder="Password"
 									required
 								/>
-								<Button class="col-span-2 h-12" color="green" on:click={() => simpanTask()}>Simpan WIFI</Button>
-
+								<Button class="col-span-2 h-12" color="green" onclick={() => simpanTask()}
+									>Simpan WIFI</Button
+								>
 							{:else}
 								<div class="col-span-2 grid h-12 w-full grid-cols-2 gap-4 rounded border p-2">
 									<input
@@ -1006,7 +1051,7 @@
 										placeholder={$kontrolID}
 										required
 									/>
-									<Button class="h-8 w-full" color="green" on:click={() => simpanTask()}
+									<Button class="h-8 w-full" color="green" onclick={() => simpanTask()}
 										>Simpan</Button
 									>
 								</div>
@@ -1036,12 +1081,12 @@
 												{/each}
 											</select>
 										</div>
-										<Button on:click={() => updateDisplayClick()} class="col-span-2"
+										<Button onclick={() => updateDisplayClick()} class="col-span-2"
 											>Update Display</Button
 										>
 									</div>
 									<div class="center col-span-2 h-12 w-full rounded border px-8 py-2">
-										<Toggle bind:checked={demoVal} on:change={() => demoChange()}
+										<Toggle bind:checked={demoVal} onchange={() => demoChange()}
 											>Demo
 											{#if $demoWait}
 												<Spinner class="me-3" bg="white" size="5" color="yellow" />
@@ -1083,7 +1128,7 @@
 									: 'mb-4 grid h-16 w-full grid-cols-3 content-start rounded border'}
 							>
 								<button
-									on:click={() =>
+									onclick={() =>
 										(sensorTemperatureList[idx].isConfig = !sensorTemperatureList[idx].isConfig)}
 									class={sensor.isConfig
 										? 'col-span-2 h-14 rounded bg-gray-200 text-left text-sm font-bold'
@@ -1099,11 +1144,11 @@
 										: 'bg-gray-100 text-center font-bold'}>{sensor.val}%</button
 								>
 								{#if sensor.isConfig}
-									<div class="ml-2 mt-2 text-xs ">Snr:{sensor.snr}</div>
-									<div class="mt-2 text-xs ">Rssi:{sensor.rssi}</div>
-									<div class="mt-2 text-xs ">val:{sensor.rawVal}</div>
+									<div class="ml-2 mt-2 text-xs">Snr:{sensor.snr}</div>
+									<div class="mt-2 text-xs">Rssi:{sensor.rssi}</div>
+									<div class="mt-2 text-xs">val:{sensor.rawVal}</div>
 
-									<div class="col-span-3 my-2 ml-2 text-xs ">
+									<div class="col-span-3 my-2 ml-2 text-xs">
 										lastSeen:{sensor.lastSeen}
 									</div>
 								{/if}
@@ -1117,7 +1162,7 @@
 									: 'mb-4 grid h-16 w-full grid-cols-3 content-start rounded border'}
 							>
 								<button
-									on:click={() =>
+									onclick={() =>
 										(sensorHumidityList[idx].isConfig = !sensorHumidityList[idx].isConfig)}
 									class={sensor.isConfig
 										? 'col-span-2 h-14 rounded bg-gray-200 text-left text-sm font-bold'
@@ -1151,8 +1196,7 @@
 									: 'mb-4 grid h-16 w-full grid-cols-3 content-start rounded border'}
 							>
 								<button
-									on:click={() =>
-										(sensorLengasList[idx].isConfig = !sensorLengasList[idx].isConfig)}
+									onclick={() => (sensorLengasList[idx].isConfig = !sensorLengasList[idx].isConfig)}
 									class={sensor.isConfig
 										? 'col-span-2 h-14 rounded bg-gray-200 text-left text-sm font-bold'
 										: 'col-span-2 h-14 rounded bg-gray-100 text-left text-sm font-bold'}
@@ -1167,13 +1211,13 @@
 										: 'bg-gray-100 text-center font-bold'}>{sensor.val}%</button
 								>
 								{#if sensor.isConfig}
-									<div class="ml-2  text-xs font-normal">Snr:{sensor.snr}</div>
+									<div class="ml-2 text-xs font-normal">Snr:{sensor.snr}</div>
 									<div class="text-xs font-normal">Rssi:{sensor.rssi}</div>
 									<div class=" text-xs font-normal">val:{sensor.rawVal}</div>
-									
-									<div class="ml-2  text-xs font-normal">minVal:{sensor.minValue}</div>
+
+									<div class="ml-2 text-xs font-normal">minVal:{sensor.minValue}</div>
 									<div class="text-xs font-normal">maxVal:{sensor.maxValue}</div>
-									<div></div>	
+									<div></div>
 
 									<div class="col-span-3 ml-2 text-xs font-normal">
 										lastSeen:{sensor.lastSeen}
@@ -1185,12 +1229,13 @@
 						{#each $sensorIntermittentList as sensor, idx}
 							<div
 								class={sensor.isConfig
-									? 'mb-4 grid h-34 w-full grid-cols-3 content-start rounded border'
+									? 'h-34 mb-4 grid w-full grid-cols-3 content-start rounded border'
 									: 'mb-4 grid h-16 w-full grid-cols-3 content-start rounded border'}
 							>
 								<button
-									on:click={() =>
-										($sensorIntermittentList[idx].isConfig = !$sensorIntermittentList[idx].isConfig)}
+									onclick={() =>
+										($sensorIntermittentList[idx].isConfig =
+											!$sensorIntermittentList[idx].isConfig)}
 									class={sensor.isConfig
 										? 'col-span-2 h-14 rounded bg-gray-200 text-left text-sm font-bold'
 										: 'col-span-2 h-14 rounded bg-gray-100 text-left text-sm font-bold'}
@@ -1205,13 +1250,13 @@
 										: 'bg-gray-100 text-center font-bold'}>{sensor.val} cm</button
 								>
 								{#if sensor.isConfig}
-									<div class="ml-2  text-xs font-normal">Snr:{sensor.snr}</div>
+									<div class="ml-2 text-xs font-normal">Snr:{sensor.snr}</div>
 									<div class="text-xs font-normal">Rssi:{sensor.rssi}</div>
 									<div class=" text-xs font-normal">val:{sensor.rawVal}</div>
-									
-									<div class="ml-2  text-xs font-normal">minVal:{sensor.minValue}</div>
+
+									<div class="ml-2 text-xs font-normal">minVal:{sensor.minValue}</div>
 									<div class="text-xs font-normal">maxVal:{sensor.maxValue}</div>
-									<div></div>	
+									<div></div>
 
 									<div class="col-span-3 ml-2 text-xs font-normal">
 										lastSeen:{sensor.lastSeen}
@@ -1232,7 +1277,7 @@
 									<input
 										id="checked-checkbox"
 										type="checkbox"
-										on:change={() => networkChange()}
+										onchange={() => networkChange()}
 										bind:checked={onlineCheck}
 										class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600"
 									/>
@@ -1269,10 +1314,10 @@
 									placeholder={$kontrolID}
 									required
 								/>
-								<Button color="green" on:click={() => simpanTask()}>Simpan</Button>
+								<Button color="green" onclick={() => simpanTask()}>Simpan</Button>
 								<div class="col-span-2"></div>
 								{#if $isStarted}
-									<Toggle bind:checked={demoVal} on:change={() => demoChange()}
+									<Toggle bind:checked={demoVal} onchange={() => demoChange()}
 										>Demo
 										{#if $demoWait}
 											<Spinner class="me-3 ml-2" bg="white" size="5" color="yellow" />
