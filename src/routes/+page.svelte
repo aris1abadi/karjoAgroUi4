@@ -587,7 +587,7 @@
 			<button onclick={() => bleConnectionToggle()}>connect BT</button>
 		</div>
 
-		<div id="targetMeter" style="width:500px;height:500px">tes123</div>
+		
 
 			
 	</div>
