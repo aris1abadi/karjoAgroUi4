@@ -454,8 +454,9 @@ export function getLocalStatus() {
 
 export function kirimMsg(type, num, cmd, msg) {
 
-  const ms = pubMqtt + type + "/" + num + "/" + cmd;
-  const bleMsg = ms + ";" + msg + ";";
+  let ms = pubMqtt + type + "/" + num + "/" + cmd;
+  const topicMsg = ms.replace(/\s/g, '');
+  const bleMsg = topicMsg + ";" + msg + ";";
   const net = get(networkMode);
   //console.log(bleMsg);
 
@@ -463,7 +464,7 @@ export function kirimMsg(type, num, cmd, msg) {
 
     mqttClient.subscribe((client) => {
       if (client) {
-        client.publish(ms, msg, { qos: 0, retain: false });
+        client.publish(topicMsg, msg, { qos: 0, retain: false });
         return true
       } else {
         console.error("MQTT client is not connected");
