@@ -119,33 +119,7 @@ export let aktuatorList = [{
 }
 ]
 
-export let sensorLengasList = [{
-  nodeId: "----",
-  sensorType: nodeType.NODE_SOIL_MOISTURE,
-  battLevel: 100,
-  rssi: 0,
-  snr: 0,
-  lastSeen: "",
-  val: 0,
-  rawVal: 0,
-  isActive: false,
-  isConfig: false,
-  minValue: 0,
-  maxValue: 0
-}, {
-  nodeId: "----",
-  sensorType: nodeType.NODE_SOIL_MOISTURE,
-  battLevel: 100,
-  rssi: 0,
-  snr: 0,
-  val: 0,
-  rawVal: 0,
-  lastSeen: "",
-  isActive: false,
-  isConfig: false,
-  minValue: 0,
-  maxValue: 0
-}];
+
 
 export let sensorTemperatureList = [{
   nodeId: "0002",
@@ -200,6 +174,36 @@ export let sensorHumidityList = [{
   minValue: 0,
   maxValue: 0
 }];
+export let sensorLengasList = writable([])
+/*
+export let sensorLengasList = [{
+  nodeId: "----",
+  sensorType: nodeType.NODE_SOIL_MOISTURE,
+  battLevel: 100,
+  rssi: 0,
+  snr: 0,
+  lastSeen: "",
+  val: 0,
+  rawVal: 0,
+  isActive: false,
+  isConfig: false,
+  minValue: 0,
+  maxValue: 0
+}, {
+  nodeId: "----",
+  sensorType: nodeType.NODE_SOIL_MOISTURE,
+  battLevel: 100,
+  rssi: 0,
+  snr: 0,
+  val: 0,
+  rawVal: 0,
+  lastSeen: "",
+  isActive: false,
+  isConfig: false,
+  minValue: 0,
+  maxValue: 0
+}];
+*/
 
 export let sensorIntermittentList = writable([])
 /*
@@ -312,7 +316,8 @@ let clientId = "CL" + Math.random().toString(16).substr(2, 4).toUpperCase();
 //const host = 'ws://abadinet.my.id:2020'
 //const host = 'wss://node-red.balingtansmart.my.id/ws'
 //const host =  'ws://'+ get(brokerUseStore) + '/mqtt:' + get(brokerPortUseStore);
-const brokerUrl = "wss://mqtt.eclipseprojects.io/mqtt:443";
+//const brokerUrl = "wss://mqtt.eclipseprojects.io/mqtt:443";
+const brokerUrl ='z442812a.ala.asia-southeast1.emqxsl.com/mqtt:8084'
 //const brokerUrl = "ws://mqtt.eclipseprojects.io/mqtt:80";
 
 let lastMsg = "";
@@ -607,9 +612,9 @@ function cekMqttMsg(topic, msg_payload) {
           lastMsg = msg_payload;
           const newSoilSensor = JSON.parse(msg_payload).SoilSensor;
           if (newSoilSensor.length > 0) {
-            sensorLengasList = newSoilSensor;
+            sensorLengasList.set(newSoilSensor);
           }
-          //console.log(sensorLengasList)
+          console.log('info soil sensor:' + JSON.stringify(sensorLengasList))
         }
       } else if (msg_cmd === "InfoAllDistanceSensor") {
         if (lastMsg != msg_payload) {
@@ -759,19 +764,11 @@ function cekMqttMsg(topic, msg_payload) {
 
 
         } else if (newMsg.type == nodeType.NODE_SOIL_MOISTURE) {
-          for (let i = 0; i < sensorLengasList.length; i++) {
-            if (newMsg.nodeId == sensorLengasList[i].nodeId) {
-              sensorLengasList[i].battLevel = newMsg.battLevel
-              sensorLengasList[i].rssi = newMsg.rssi
-              sensorLengasList[i].snr = newMsg.snr
-              sensorLengasList[i].lastSeen = unixToLocalString(newMsg.lastSeen)
-              sensorLengasList[i].isActive = true;
-              sensorLengasList[i].val = newMsg.sensorVal
-              sensorLengasList[i].rawVal = newMsg.payload
-              sensorLengasList[i].minValue = newMsg.minValue
-              sensorLengasList[i].maxValue = newMsg.maxValue
-            }
-          }
+          sensorLengasList.update(sensor => {
+            sensor[n_sensor] = { ...sensor[n_sensor], battLevel: newMsg.battLevel, rssi: newMsg.rssi, snr: newMsg.snr, val: newMsg.sensorVal, rawVal: newMsg.payload, minValue: newMsg.minValue, maxValue: newMsg.maxValue, isActive: newMsg.isActive, lastSeen: unixToLocalString(newMsg.lastSeen) };
+            console.log('update lengas:' + JSON.stringify(sensor))
+            return sensor;
+          });
         } else if (newMsg.type == nodeType.NODE_TEMPERATURE) {
           for (let i = 0; i < sensorTemperatureList.length; i++) {
             if (newMsg.nodeId == sensorTemperatureList[i].nodeId) {

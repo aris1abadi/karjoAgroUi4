@@ -51,6 +51,9 @@
 		loginStart,
 		loginWait
 	} from '$lib/stores';
+	import {CircularFluidMeter} from 'fluid-meter';
+
+	let fluidVal = 67;
 
 	let showPassword = $state(false);
 
@@ -144,6 +147,10 @@
 	});
 
 	// @ts-ignore
+	let meterValue = 25; // Nilai awal
+
+	// Contoh animasi nilai
+	
 
 	const serverList = ['server1', 'server2', 'server3'];
 
@@ -227,7 +234,7 @@
 			minSpinner = 10;
 			maxSpinner = 100;
 		} else if (modeSelect === taskMode.MODE_LENGAS) {
-			sensorList = sensorLengasList;
+			sensorList = $sensorLengasList;
 			sensorSelect = 0;
 			minSpinner = 10;
 			maxSpinner = 100;
@@ -280,7 +287,7 @@
 				minSpinner = 10;
 				maxSpinner = 100;
 			} else if ($myTask[idx].mode === taskMode.MODE_LENGAS) {
-				sensorList = sensorLengasList;
+				sensorList = $sensorLengasList;
 				sensorSelect = $myTask[idx].sensorUse - 1;
 				//batasBawahValue = $myTask[idx].batasBawah;
 				//batasAtasValue = $myTask[idx].batasAtas;
@@ -357,7 +364,7 @@
 			maxSpinner = 100;
 			namaSelect = 'Humidity';
 		} else if (modeSelect === taskMode.MODE_LENGAS) {
-			sensorList = sensorLengasList;
+			sensorList = $sensorLengasList;
 			//batasBawahValue = $myTask[setupIndex].batasBawah;
 			//batasAtasValue = $myTask[setupIndex].batasAtas;
 			rangeValue[0] = $myTask[setupIndex].batasBawah;
@@ -388,35 +395,6 @@
 		console.log('Server select: ' + serverList[serverSelect]);
 	}
 
-	function batasBawahChange() {
-		const tp = 'auto' + $myTask[setupIndex].nama;
-		/*
-		if ($myTask[setupIndex].mode === taskMode.MODE_INTERMITTEN) {
-			$myTask[setupIndex].batasBawah = batasBawahValue + 15;
-		} else {
-			$myTask[setupIndex].batasBawah = batasBawahValue;
-		}
-			*/
-		$myTask[setupIndex].batasBawah = batasBawahValue;
-		rangeValue[0] = batasBawahValue;
-
-		//alert("Target bawah: " + batasBawahValue);
-	}
-
-	function batasAtasChange() {
-		const tp = 'auto' + $myTask[setupIndex].nama;
-		/*
-		if ($myTask[setupIndex].mode === taskMode.MODE_INTERMITTEN) {
-			$myTask[setupIndex].batasAtas = batasAtasValue + 15;
-		} else {
-			$myTask[setupIndex].batasAtas = batasAtasValue;
-		}
-			*/
-		$myTask[setupIndex].batasAtas = batasAtasValue;
-		rangeValue[1] = batasAtasValue;
-
-		//alert("Target atas: " + batasAtasValue);
-	}
 	function rangeChange() {
 		$myTask[setupIndex].batasBawah = rangeValue[0];
 		$myTask[setupIndex].batasAtas = rangeValue[1];
@@ -609,7 +587,9 @@
 			<button onclick={() => bleConnectionToggle()}>connect BT</button>
 		</div>
 
-		
+		<div id="targetMeter" style="width:500px;height:500px">tes123</div>
+
+			
 	</div>
 {:else}
 	<div class="mx-auto w-full max-w-md p-4">
@@ -1189,14 +1169,14 @@
 							</div>
 						{/each}
 						<hr class="mb-4" />
-						{#each sensorLengasList as sensor, idx}
+						{#each $sensorLengasList as sensor, idx}
 							<div
 								class={sensor.isConfig
 									? 'mb-4 grid h-32 w-full grid-cols-3 content-start rounded border'
 									: 'mb-4 grid h-16 w-full grid-cols-3 content-start rounded border'}
 							>
 								<button
-									onclick={() => (sensorLengasList[idx].isConfig = !sensorLengasList[idx].isConfig)}
+									onclick={() => ($sensorLengasList[idx].isConfig = !$sensorLengasList[idx].isConfig)}
 									class={sensor.isConfig
 										? 'col-span-2 h-14 rounded bg-gray-200 text-left text-sm font-bold'
 										: 'col-span-2 h-14 rounded bg-gray-100 text-left text-sm font-bold'}
@@ -1365,6 +1345,13 @@
 			padding: 12px 0;
 		}
 	}
+	.meter-wrapper {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+    }
 	/*
 	.rangePips :is(.in-range, .selected) {
 		background: #f00;
