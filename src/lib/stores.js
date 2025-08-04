@@ -336,7 +336,9 @@ function cekConnectionTimeout() {
 
 const options = {
   keepalive: 30,
-  clientId,
+  clientId,  
+  username : 'abadinet',
+  password : 'abadinet123',
   protocolId: "MQTT",
   protocolVersion: 4,
   clean: true,
