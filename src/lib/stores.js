@@ -317,7 +317,7 @@ let clientId = "CL" + Math.random().toString(16).substr(2, 4).toUpperCase();
 //const host = 'wss://node-red.balingtansmart.my.id/ws'
 //const host =  'ws://'+ get(brokerUseStore) + '/mqtt:' + get(brokerPortUseStore);
 //const brokerUrl = "wss://mqtt.eclipseprojects.io/mqtt:443";
-const brokerUrl ='z442812a.ala.asia-southeast1.emqxsl.com:8084/mqtt'
+const brokerUrl ='wss://z442812a.ala.asia-southeast1.emqxsl.com:8084/mqtt'
 //const brokerUrl = "ws://mqtt.eclipseprojects.io/mqtt:80";
 
 let lastMsg = "";
